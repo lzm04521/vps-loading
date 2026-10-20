@@ -1,0 +1,243 @@
+{
+  "app": {
+    "title": "VPS Monitor"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "products": "Inventory",
+    "restock": "Restock Feed",
+    "alerts": "Alerts",
+    "rules": "Alert Rules",
+    "polls": "Poll Logs",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "empty": "No data",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "copy": "Copy",
+    "copied": "Copied",
+    "actions": "Actions",
+    "time": "Time",
+    "all": "All",
+    "saved": "Saved",
+    "vendor": "Vendor",
+    "product": "Product",
+    "name": "Name",
+    "price": "Price",
+    "region": "Region",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "event": {
+    "restock": "Restock",
+    "soldout": "Sold out",
+    "price_down": "Price drop",
+    "price_up": "Price up",
+    "new_product": "New"
+  },
+  "channel": {
+    "local": "Local (dashboard)",
+    "telegram": "Telegram",
+    "webhook": "Webhook"
+  },
+  "dashboard": {
+    "stats": {
+      "total": "Plans",
+      "ok": "In stock",
+      "oos": "Sold out",
+      "watched": "Watched",
+      "events24h": "Events (24h)",
+      "alerts24h": "Alerts (24h)"
+    },
+    "collector": {
+      "title": "Collector",
+      "sourceUrl": "Source",
+      "interval": "Interval",
+      "intervalValue": "{{seconds}}s",
+      "lastChecked": "Last check",
+      "lastSuccess": "Last success",
+      "lastDataChange": "Last data change",
+      "lastError": "Last error",
+      "never": "Never",
+      "busy": "Collecting",
+      "idle": "Idle",
+      "collectNow": "Collect now",
+      "forceCollect": "Force collect",
+      "forceHint": "Ignore ETag and content-hash caches"
+    },
+    "recentEvents": "Recent events",
+    "channels": {
+      "title": "Alert channels",
+      "telegramReady": "Telegram configured",
+      "telegramNotReady": "Telegram not configured",
+      "webhookReady": "Webhook configured",
+      "webhookNotReady": "Webhook not configured"
+    }
+  },
+  "products": {
+    "title": "Inventory",
+    "searchPlaceholder": "Search plan / vendor / route / promo code",
+    "vendor": "Vendor",
+    "allVendors": "All vendors",
+    "region": "Region",
+    "allRegions": "All regions",
+    "maxPrice": "Max price (USD)",
+    "statusAll": "All",
+    "statusIn": "In stock",
+    "statusOut": "Sold out",
+    "watchOnly": "Watched only",
+    "sort": "Sort",
+    "sorts": {
+      "default": "In stock first",
+      "price_asc": "Price low to high",
+      "price_desc": "Price high to low",
+      "change": "Recent change",
+      "name": "Name",
+      "vendor": "Vendor"
+    },
+    "resultCount": "{{total}} plans",
+    "inStock": "In stock",
+    "outOfStock": "Sold out",
+    "lastChange": "Last change",
+    "firstSeen": "First seen",
+    "promo": "Promo",
+    "route": "Route",
+    "buy": "Buy",
+    "noResults": "No matching plans"
+  },
+  "restock": {
+    "localTitle": "Local events",
+    "localDesc": "Restock / soldout / price changes produced by each poll",
+    "sourceTitle": "Source feed",
+    "sourceDesc": "Recent updates from kyoa.de (Beijing time)",
+    "filterType": "Event type"
+  },
+  "alerts": {
+    "title": "Alert log",
+    "desc": "Delivery results after rule matches; local alerts only appear here",
+    "rule": "Rule",
+    "channel": "Channel",
+    "statusSent": "Sent",
+    "statusLocal": "Local",
+    "statusFailed": "Failed"
+  },
+  "rules": {
+    "title": "Alert rules",
+    "desc": "Send alerts when events match; per-product cooldown suppresses duplicates",
+    "create": "New rule",
+    "editTitle": "Edit rule",
+    "name": "Rule name",
+    "namePlaceholder": "e.g. Japan low-price restock",
+    "eventTypes": "Event types",
+    "vendor": "Vendor",
+    "allVendors": "All vendors",
+    "regionLike": "Region contains",
+    "regionPlaceholder": "e.g. Japan",
+    "nameLike": "Name contains",
+    "nameLikePlaceholder": "e.g. Tokyo",
+    "routeLike": "Route contains",
+    "routePlaceholder": "e.g. CN2GIA",
+    "minPrice": "Min price (USD)",
+    "maxPrice": "Max price (USD)",
+    "channel": "Channel",
+    "cooldown": "Cooldown (minutes)",
+    "onlyWatchlist": "Watched plans only",
+    "save": "Save rule",
+    "cancelEdit": "Cancel edit",
+    "colEvents": "Events",
+    "colConditions": "Conditions",
+    "colChannel": "Channel",
+    "colCooldown": "Cooldown",
+    "noConditions": "Any",
+    "deleteConfirm": "Delete this rule?",
+    "created": "Rule created",
+    "updated": "Rule updated",
+    "deleted": "Rule deleted"
+  },
+  "polls": {
+    "title": "Poll logs",
+    "desc": "304 means the source data is unchanged, which is normal",
+    "http": "HTTP",
+    "changed": "Changed",
+    "changedYes": "Changed",
+    "changedNo": "Unchanged",
+    "total": "Total",
+    "ok": "In stock",
+    "oos": "Sold out",
+    "duration": "Duration",
+    "durationValue": "{{ms}} ms",
+    "error": "Error"
+  },
+  "settings": {
+    "title": "Settings",
+    "collect": {
+      "title": "Collector",
+      "sourceUrl": "Source URL",
+      "interval": "Poll interval (seconds, min 60)"
+    },
+    "notify": {
+      "title": "Alert channels",
+      "telegram": "Telegram",
+      "chatId": "Chat ID",
+      "botToken": "Bot Token",
+      "tokenSet": "Configured (stored in Windows Credential Manager)",
+      "tokenUnset": "Not configured",
+      "tokenPlaceholder": "Leave empty to keep; type to overwrite",
+      "webhook": "Webhook",
+      "webhookUrl": "Webhook URL"
+    },
+    "app": {
+      "title": "Application",
+      "autoStart": "Start with Windows (silent, tray only)",
+      "language": "Language",
+      "logLevel": "Log level"
+    },
+    "paths": {
+      "title": "Data locations",
+      "configPath": "Config file",
+      "dbPath": "Database",
+      "openLogDir": "Open log directory"
+    },
+    "legacy": {
+      "title": "Import legacy data (v0.2 and earlier exe)",
+      "desc": "Pick the old install directory (containing config.json and data\\monitor.db) to import alert settings and reuse history. The old program is untouched.",
+      "pick": "Choose directory",
+      "dirPlaceholder": "No directory selected",
+      "overwrite": "Overwrite current database (required when it already has data)",
+      "import": "Import",
+      "imported": "Import finished"
+    },
+    "saved": "Settings saved"
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "sourceRepo": "Repository",
+    "techTitle": "Architecture",
+    "techDesc": "Tauri 2 desktop app: Rust core (collection / storage / alerting) + React WebView UI, backed by local SQLite.",
+    "updateTitle": "Upgrading",
+    "updateDesc": "The repository is private, so in-app auto-update is unavailable; download the new installer from GitHub Releases and install over the old one. Config and data are preserved.",
+    "dataNote": "Data lives in %APPDATA%\\vps-monitor; uninstalling or upgrading does not touch it."
+  },
+  "errors": {
+    "INTERNAL": "Internal error: {{detail}}",
+    "RULE_INVALID": "Invalid rule: {{detail}}",
+    "RULE_NOT_FOUND": "Rule not found",
+    "PRODUCT_NOT_FOUND": "Plan not found",
+    "CONFIG_INVALID": "Invalid settings: {{detail}}",
+    "CONFIG_SAVE_FAILED": "Failed to save settings: {{detail}}",
+    "SECRET_SAVE_FAILED": "Failed to save credential: {{detail}}",
+    "LEGACY_INVALID_DIR": "Directory does not exist",
+    "LEGACY_READ_FAILED": "Failed to read legacy config: {{detail}}",
+    "LEGACY_CONFIG_CORRUPT": "Legacy config is corrupted: {{detail}}",
+    "LEGACY_DB_CONFLICT": "{{detail}}",
+    "LEGACY_DB_IMPORT_FAILED": "Failed to import legacy database: {{detail}}"
+  }
+}

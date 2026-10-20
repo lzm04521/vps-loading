@@ -1,0 +1,243 @@
+{
+  "app": {
+    "title": "VPS 库存监控"
+  },
+  "menu": {
+    "dashboard": "总览",
+    "products": "库存",
+    "restock": "补货动态",
+    "alerts": "告警记录",
+    "rules": "告警规则",
+    "polls": "采集日志",
+    "settings": "设置",
+    "about": "关于"
+  },
+  "common": {
+    "refresh": "刷新",
+    "loading": "加载中…",
+    "empty": "暂无数据",
+    "save": "保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "copy": "复制",
+    "copied": "已复制",
+    "actions": "操作",
+    "time": "时间",
+    "all": "全部",
+    "saved": "已保存",
+    "vendor": "商家",
+    "product": "套餐",
+    "name": "名称",
+    "price": "价格",
+    "region": "地区",
+    "status": "状态",
+    "enabled": "启用",
+    "disabled": "停用"
+  },
+  "event": {
+    "restock": "补货",
+    "soldout": "售罄",
+    "price_down": "降价",
+    "price_up": "涨价",
+    "new_product": "新品"
+  },
+  "channel": {
+    "local": "本地（看板）",
+    "telegram": "Telegram",
+    "webhook": "Webhook"
+  },
+  "dashboard": {
+    "stats": {
+      "total": "套餐总数",
+      "ok": "有货",
+      "oos": "售罄",
+      "watched": "关注",
+      "events24h": "24h 事件",
+      "alerts24h": "24h 告警"
+    },
+    "collector": {
+      "title": "采集状态",
+      "sourceUrl": "数据源",
+      "interval": "采集间隔",
+      "intervalValue": "{{seconds}} 秒",
+      "lastChecked": "上次检查",
+      "lastSuccess": "上次成功",
+      "lastDataChange": "上次数据变化",
+      "lastError": "最近错误",
+      "never": "从未",
+      "busy": "采集中",
+      "idle": "空闲",
+      "collectNow": "立即采集",
+      "forceCollect": "强制采集",
+      "forceHint": "忽略 ETag 与内容哈希缓存强制拉取"
+    },
+    "recentEvents": "最近事件",
+    "channels": {
+      "title": "告警通道",
+      "telegramReady": "Telegram 已配置",
+      "telegramNotReady": "Telegram 未配置",
+      "webhookReady": "Webhook 已配置",
+      "webhookNotReady": "Webhook 未配置"
+    }
+  },
+  "products": {
+    "title": "库存",
+    "searchPlaceholder": "搜索套餐 / 商家 / 线路 / 优惠码",
+    "vendor": "商家",
+    "allVendors": "全部商家",
+    "region": "地区",
+    "allRegions": "全部地区",
+    "maxPrice": "最高价（USD）",
+    "statusAll": "全部",
+    "statusIn": "有货",
+    "statusOut": "售罄",
+    "watchOnly": "只看关注",
+    "sort": "排序",
+    "sorts": {
+      "default": "有货优先",
+      "price_asc": "价格从低到高",
+      "price_desc": "价格从高到低",
+      "change": "最近变动",
+      "name": "名称",
+      "vendor": "商家"
+    },
+    "resultCount": "共 {{total}} 款",
+    "inStock": "有货",
+    "outOfStock": "售罄",
+    "lastChange": "最近变动",
+    "firstSeen": "首次收录",
+    "promo": "优惠码",
+    "route": "线路",
+    "buy": "购买",
+    "noResults": "没有符合条件的套餐"
+  },
+  "restock": {
+    "localTitle": "本地事件",
+    "localDesc": "每次采集对比产生的补货、售罄与价格变化",
+    "sourceTitle": "源站补货动态",
+    "sourceDesc": "kyoa.de 自带的最近动态（北京时间）",
+    "filterType": "事件类型"
+  },
+  "alerts": {
+    "title": "告警记录",
+    "desc": "规则命中后的发送结果；本地告警只落在看板",
+    "rule": "规则",
+    "channel": "通道",
+    "statusSent": "已发送",
+    "statusLocal": "本地",
+    "statusFailed": "失败"
+  },
+  "rules": {
+    "title": "告警规则",
+    "desc": "事件命中后按规则发送告警，同一套餐在冷却期内不重复发送",
+    "create": "新建规则",
+    "editTitle": "编辑规则",
+    "name": "规则名称",
+    "namePlaceholder": "例如：日本低价补货",
+    "eventTypes": "事件类型",
+    "vendor": "商家",
+    "allVendors": "全部商家",
+    "regionLike": "地区包含",
+    "regionPlaceholder": "如 日本",
+    "nameLike": "名称包含",
+    "nameLikePlaceholder": "如 东京",
+    "routeLike": "线路包含",
+    "routePlaceholder": "如 CN2GIA",
+    "minPrice": "最低价（USD）",
+    "maxPrice": "最高价（USD）",
+    "channel": "通知通道",
+    "cooldown": "冷却（分钟）",
+    "onlyWatchlist": "仅关注套餐",
+    "save": "保存规则",
+    "cancelEdit": "取消编辑",
+    "colEvents": "事件",
+    "colConditions": "条件",
+    "colChannel": "通道",
+    "colCooldown": "冷却",
+    "noConditions": "不限",
+    "deleteConfirm": "确定删除该规则？",
+    "created": "规则已创建",
+    "updated": "规则已更新",
+    "deleted": "规则已删除"
+  },
+  "polls": {
+    "title": "采集日志",
+    "desc": "304 表示源站数据未变化，属于正常情况",
+    "http": "HTTP",
+    "changed": "变化",
+    "changedYes": "有变化",
+    "changedNo": "无变化",
+    "total": "总数",
+    "ok": "有货",
+    "oos": "售罄",
+    "duration": "耗时",
+    "durationValue": "{{ms}} ms",
+    "error": "错误"
+  },
+  "settings": {
+    "title": "设置",
+    "collect": {
+      "title": "采集",
+      "sourceUrl": "数据源地址",
+      "interval": "采集间隔（秒，最小 60）"
+    },
+    "notify": {
+      "title": "告警通道",
+      "telegram": "Telegram",
+      "chatId": "Chat ID",
+      "botToken": "Bot Token",
+      "tokenSet": "已配置（保存在 Windows 凭据管理器）",
+      "tokenUnset": "未配置",
+      "tokenPlaceholder": "留空表示不修改；输入新值覆盖",
+      "webhook": "Webhook",
+      "webhookUrl": "Webhook URL"
+    },
+    "app": {
+      "title": "应用",
+      "autoStart": "开机自启动（静默进托盘）",
+      "language": "界面语言",
+      "logLevel": "日志级别"
+    },
+    "paths": {
+      "title": "数据位置",
+      "configPath": "配置文件",
+      "dbPath": "数据库",
+      "openLogDir": "打开日志目录"
+    },
+    "legacy": {
+      "title": "导入旧版数据（v0.2 及更早的 exe 版本）",
+      "desc": "选择旧版安装目录（含 config.json 与 data\\monitor.db），导入告警配置并沿用历史数据；旧版本程序不受影响。",
+      "pick": "选择目录",
+      "dirPlaceholder": "未选择目录",
+      "overwrite": "覆盖当前数据库（当前已有数据时需要勾选）",
+      "import": "导入",
+      "imported": "导入完成"
+    },
+    "saved": "设置已保存"
+  },
+  "about": {
+    "title": "关于",
+    "version": "版本",
+    "sourceRepo": "源码仓库",
+    "techTitle": "技术架构",
+    "techDesc": "Tauri 2 桌面应用：Rust 主进程（采集 / 存储 / 告警）+ React WebView 界面，SQLite 本地持久化。",
+    "updateTitle": "升级方式",
+    "updateDesc": "仓库为私有，应用内自动更新不可用；升级请从 GitHub Release 下载新安装包覆盖安装，配置与数据不受影响。",
+    "dataNote": "数据保存在本机 %APPDATA%\\vps-monitor，卸载或覆盖安装不影响数据。"
+  },
+  "errors": {
+    "INTERNAL": "内部错误：{{detail}}",
+    "RULE_INVALID": "规则参数不合法：{{detail}}",
+    "RULE_NOT_FOUND": "规则不存在",
+    "PRODUCT_NOT_FOUND": "套餐不存在",
+    "CONFIG_INVALID": "配置不合法：{{detail}}",
+    "CONFIG_SAVE_FAILED": "保存配置失败：{{detail}}",
+    "SECRET_SAVE_FAILED": "保存凭据失败：{{detail}}",
+    "LEGACY_INVALID_DIR": "目录不存在",
+    "LEGACY_READ_FAILED": "读取旧配置失败：{{detail}}",
+    "LEGACY_CONFIG_CORRUPT": "旧配置文件损坏：{{detail}}",
+    "LEGACY_DB_CONFLICT": "{{detail}}",
+    "LEGACY_DB_IMPORT_FAILED": "导入旧数据库失败：{{detail}}"
+  }
+}
