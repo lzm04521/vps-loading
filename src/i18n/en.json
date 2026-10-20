@@ -223,9 +223,20 @@
     "sourceRepo": "Repository",
     "techTitle": "Architecture",
     "techDesc": "Tauri 2 desktop app: Rust core (collection / storage / alerting) + React WebView UI, backed by local SQLite.",
-    "updateTitle": "Upgrading",
-    "updateDesc": "The repository is private, so in-app auto-update is unavailable; download the new installer from GitHub Releases and install over the old one. Config and data are preserved.",
-    "dataNote": "Data lives in %APPDATA%\\vps-monitor; uninstalling or upgrading does not touch it."
+    "updateTitle": "Updates",
+    "updateDesc": "In-app auto-update is enabled: updates are downloaded from GitHub Releases, verified by signature, and installed automatically. The app also checks for new versions on startup.",
+    "dataNote": "Data lives in %APPDATA%\\vps-monitor; uninstalling or upgrading does not touch it.",
+    "checkNow": "Check for updates",
+    "found": "New version v{{version}} available",
+    "uptodate": "You are up to date",
+    "downloadInstall": "Download & install",
+    "downloading": "Downloading update…",
+    "readyToRestart": "Update installed. Restart the app to apply.",
+    "restartNow": "Restart now",
+    "updateFailed": "Update check or install failed: {{detail}}",
+    "updateAvailableTitle": "Update available",
+    "updateAvailableDesc": "v{{version}} has been released. Go to the About page to upgrade.",
+    "goToUpdate": "Go to update"
   },
   "errors": {
     "INTERNAL": "Internal error: {{detail}}",

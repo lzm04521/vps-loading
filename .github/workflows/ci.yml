@@ -77,8 +77,12 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 自动更新签名：私钥存仓库 secret，公钥内置在 tauri.conf.json
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "VPS Monitor ${{ github.ref_name }}"
           releaseDraft: false
           prerelease: false
+          # 生成 latest.json 供应用内更新器发现新版本（含各平台签名）
+          includeUpdaterJson: true

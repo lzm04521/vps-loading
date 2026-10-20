@@ -30,9 +30,9 @@ pub fn run() {
             // 开机自启附加参数：静默进托盘，不弹主窗口
             Some(vec!["--hidden"]),
         ))
-        // 更新器结构预留（依赖与前端 useUpdater 均在）：私有仓库 latest.json 匿名不可达，
-        // 默认不注册插件——注册需同时在 tauri.conf.json 配 plugins.updater 端点。
-        // 启用时：注册 tauri_plugin_updater::Builder::new().build() 并补配置。
+        // 应用内自动更新：更新源为公开仓库 Release 的 latest.json（tauri.conf.json plugins.updater），
+        // 安装包由 CI 用 TAURI_SIGNING_PRIVATE_KEY 签名，客户端用内置公钥校验
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {

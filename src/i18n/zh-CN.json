@@ -223,9 +223,20 @@
     "sourceRepo": "源码仓库",
     "techTitle": "技术架构",
     "techDesc": "Tauri 2 桌面应用：Rust 主进程（采集 / 存储 / 告警）+ React WebView 界面，SQLite 本地持久化。",
-    "updateTitle": "升级方式",
-    "updateDesc": "仓库为私有，应用内自动更新不可用；升级请从 GitHub Release 下载新安装包覆盖安装，配置与数据不受影响。",
-    "dataNote": "数据保存在本机 %APPDATA%\\vps-monitor，卸载或覆盖安装不影响数据。"
+    "updateTitle": "版本升级",
+    "updateDesc": "支持应用内自动更新：更新包从 GitHub Release 下载、经签名校验后自动安装，配置与数据不受影响；启动时也会自动检测新版本。",
+    "dataNote": "数据保存在本机 %APPDATA%\\vps-monitor，卸载或覆盖安装不影响数据。",
+    "checkNow": "检查更新",
+    "found": "发现新版本 v{{version}}",
+    "uptodate": "已是最新版本",
+    "downloadInstall": "下载并安装",
+    "downloading": "正在下载更新…",
+    "readyToRestart": "更新已安装完成，重启应用后生效。",
+    "restartNow": "立即重启",
+    "updateFailed": "更新检查或安装失败：{{detail}}",
+    "updateAvailableTitle": "发现新版本",
+    "updateAvailableDesc": "v{{version}} 已发布，可到“关于”页面完成升级。",
+    "goToUpdate": "前往升级"
   },
   "errors": {
     "INTERNAL": "内部错误：{{detail}}",

@@ -1,5 +1,5 @@
 import { HashRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { App as AntApp, ConfigProvider, Layout, Menu } from "antd";
+import { App as AntApp, Button, ConfigProvider, Layout, Menu } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import enUS from "antd/locale/en_US";
 import {
@@ -13,6 +13,7 @@ import {
   ThunderboltOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
+import { useEffect, useRef } from "react";
 import About from "./pages/About";
 import Alerts from "./pages/Alerts";
 import Dashboard from "./pages/Dashboard";
@@ -35,6 +36,48 @@ const menuItems = [
   { key: "/about", icon: <InfoCircleOutlined />, ns: "menu.about" },
 ];
 
+/** 启动时静默检查一次新版本：发现新版本弹通知，引导到"关于"页升级 */
+function StartupUpdateCheck() {
+  const { t } = useTranslation();
+  const { notification } = AntApp.useApp();
+  const navigate = useNavigate();
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void (async () => {
+      try {
+        const { check } = await import("@tauri-apps/plugin-updater");
+        const update = await check();
+        if (!update) return;
+        notification.info({
+          message: t("about.updateAvailableTitle"),
+          description: t("about.updateAvailableDesc", { version: update.version }),
+          placement: "bottomRight",
+          btn: (
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => {
+                notification.destroy();
+                navigate("/about");
+              }}
+            >
+              {t("about.goToUpdate")}
+            </Button>
+          ),
+        });
+      } catch (e) {
+        // 启动静默检查失败不打扰用户，仅记录控制台
+        console.warn("startup update check failed:", e);
+      }
+    })();
+  }, [notification, navigate, t]);
+
+  return null;
+}
+
 function AppLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -42,6 +85,7 @@ function AppLayout() {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
+      <StartupUpdateCheck />
       <Sider theme="dark" width={200}>
         <div
           style={{

@@ -20,7 +20,7 @@
 从 GitHub 仓库 Releases 页下载 `VPS Monitor_x.y.z_x64-setup.exe`，双击安装（per-user 安装，无需管理员）。
 
 - 数据与配置保存在 `%APPDATA%\com.vpsmonitor.app`（数据库）与 `%LOCALAPPDATA%\com.vpsmonitor.app\logs`（日志），覆盖安装、卸载都不受影响。
-- 升级：下载新安装包覆盖安装即可。
+- 升级：应用内自动更新——启动时自动检测新版本并在"关于"页手动检查，下载经签名校验的安装包自动完成升级；也可手动下载新安装包覆盖安装。
 - **从旧版（v0.2 及更早的绿色 exe）迁移**：打开新应用 → 设置 → 导入旧版数据 → 选择旧版安装目录（含 `config.json` 与 `data\monitor.db`），导入告警配置（含 Telegram token）并沿用历史数据；旧版程序不受影响。
 
 ## 开发
@@ -37,7 +37,7 @@ cargo test            # Rust 单元测试
 cargo clippy --all-targets -- -D warnings
 ```
 
-打包安装包：`pnpm tauri build`（产物在 `src-tauri/target/release/bundle/nsis/`）。
+打包安装包：`pnpm tauri build`（产物在 `src-tauri/target/release/bundle/nsis/`）。本地打包需设置 `TAURI_SIGNING_PRIVATE_KEY` 环境变量（更新签名私钥，见下文"发版"），否则 bundle 阶段会因无法签名失败。
 
 图标源图：`python scripts/gen_icon.py` 生成 `app-icon.png`，再 `pnpm tauri icon app-icon.png` 出全套。
 
@@ -50,7 +50,7 @@ cargo clippy --all-targets -- -D warnings
 │   ├── api/ipc.ts           # 唯一后端通道：invoke 命令 + listen("monitor://status") + IpcError
 │   ├── pages/               # 8 页：总览/库存/补货动态/告警/规则/采集日志/设置/关于
 │   ├── components/          # ProductCard、EventTag
-│   ├── hooks/useUpdater.ts  # 更新状态机（结构预留，私有仓库默认停用）
+│   ├── hooks/useUpdater.ts  # 应用内更新状态机（检查/下载/安装/重启）
 │   ├── i18n/                # zh-CN / en 资源 + IPC 错误码文案映射
 │   └── types.ts             # 与 Rust DTO 镜像的唯一类型源
 └── src-tauri/src/           # Rust 主进程（业务核心）
@@ -76,7 +76,10 @@ git tag vX.Y.Z
 git push --tags   # 触发 .github/workflows/ci.yml 的 release job，出 NSIS 安装包并挂 Release
 ```
 
-应用内自动更新为结构预留但默认停用：私有仓库的 Release 资产（latest.json）匿名不可下载。若需启用：仓库转公开后在 `tauri.conf.json` 配 updater 端点并在 `lib.rs` 注册 updater 插件。
+应用内自动更新已启用：CI 发布时用 minisign 私钥签名安装包并在 Release 附 `latest.json`，应用从公开仓库 Release 拉取更新、以内置公钥（`tauri.conf.json` 的 `plugins.updater.pubkey`）校验后安装。
+
+- 签名私钥存于本机 `C:\Users\lzm04\.tauri\vps-loading_updater.key`（空密码），并已配置为仓库 Actions secret `TAURI_SIGNING_PRIVATE_KEY`；**私钥丢失将无法再发自动更新**，请妥善备份。
+- 注意：v0.3.1 及更早版本未内置更新器，需手动覆盖安装一次新版本后才能收到后续自动更新。
 
 ## 数据说明
 
