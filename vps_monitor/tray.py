@@ -9,9 +9,11 @@ from __future__ import annotations
 import ctypes
 import logging
 import socket
+import sys
 import threading
 import time
 import webbrowser
+import winreg
 from queue import Empty, Queue
 from typing import Any, Callable, Optional
 
@@ -63,6 +65,43 @@ def port_bindable(host: str, port: int) -> bool:
 
 def dashboard_url(port: int) -> str:
     return f"http://127.0.0.1:{port}"
+
+
+def promote_tray_icon() -> None:
+    """Win11：把本 exe 的托盘图标设置为直接显示在任务栏（而非收进溢出区）。
+
+    系统在图标加入托盘时才写 NotifyIconSettings 条目，需带重试等待；
+    仅打包模式调用，避免影响源码模式下同一 python.exe 的其他托盘程序。
+    """
+    if not getattr(sys, "frozen", False):
+        return
+    key_root = r"Control Panel\NotifyIconSettings"
+    target = str(sys.executable).lower()
+    for _ in range(15):
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_root) as root:
+                index = 0
+                while True:
+                    try:
+                        sub = winreg.EnumKey(root, index)
+                    except OSError:
+                        break
+                    index += 1
+                    sub_path = f"{key_root}\\{sub}"
+                    try:
+                        with winreg.OpenKey(
+                            winreg.HKEY_CURRENT_USER, sub_path, 0, winreg.KEY_ALL_ACCESS
+                        ) as key:
+                            exe, _ = winreg.QueryValueEx(key, "ExecutablePath")
+                            if str(exe).lower() == target:
+                                winreg.SetValueEx(key, "IsPromoted", 0, winreg.REG_DWORD, 1)
+                                log.info("托盘图标已设置为在任务栏直接显示")
+                                return
+                    except OSError:
+                        continue
+        except OSError:
+            pass
+        time.sleep(1.0)
 
 
 def icon_image(size: int = 64) -> Image.Image:
@@ -401,7 +440,10 @@ class TrayApp:
         except Exception:
             log.info("通知：%s", message)
 
-    def _icon_ready(self, started: bool) -> None:
+    def _icon_ready(self, icon: pystray.Icon, started: bool) -> None:
+        # pystray 约定：自定义 setup 回调必须显式置 visible，否则图标不会加进托盘
+        icon.visible = True
+        threading.Thread(target=promote_tray_icon, name="vps-tray-promote", daemon=True).start()
         if not started:
             self._notify(
                 f"端口 {self.port} 启动失败（可能被占用）。右键图标 → 设置… 更改端口"
@@ -434,7 +476,7 @@ class TrayApp:
         self.icon = pystray.Icon("vps_monitor", icon_image(), "VPS 库存监控", menu)
         try:
             # pystray 的 setup 回调签名为 setup(icon)
-            self.icon.run(setup=lambda icon: self._icon_ready(started))
+            self.icon.run(setup=lambda icon: self._icon_ready(icon, started))
         except KeyboardInterrupt:
             self.icon.stop()
         log.info("正在退出，停止 Web 服务…")
