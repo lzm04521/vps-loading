@@ -1,6 +1,6 @@
 [package]
 name = "vps-monitor"
-version = "0.3.2"
+version = "0.3.3"
 description = "VPS 库存监控：采集 kyoa.de 库存数据，看板/事件/规则告警"
 authors = ["VPS Monitor contributors"]
 edition = "2024"

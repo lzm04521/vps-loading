@@ -302,6 +302,7 @@ pub struct EventView {
     pub buy_url: String,
     pub region_cn: String,
     pub vendor_name: String,
+    pub unit: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

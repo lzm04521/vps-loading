@@ -7,6 +7,7 @@ import { collectManual, eventsList, onStatusEvent, summaryGet } from "../api/ipc
 import { ipcErrorMessage } from "../i18n/errors";
 import { EventTag } from "../components/EventTag";
 import { formatDateTime, formatRelative } from "../time";
+import { priceWithUnit } from "../price";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -200,7 +201,12 @@ export default function Dashboard() {
               title: t("common.price"),
               width: 160,
               render: (_, e) => {
-                const priceText = e.currentPrice || (e.currentPriceUsd != null ? `$${e.currentPriceUsd.toFixed(2)}` : "-");
+                // 空价回退美元折算价，折算参考价不带周期
+                const priceText = e.currentPrice
+                  ? priceWithUnit(e.currentPrice, e.unit)
+                  : e.currentPriceUsd != null
+                    ? `$${e.currentPriceUsd.toFixed(2)}`
+                    : "-";
                 const changed =
                   e.oldPriceUsd != null &&
                   e.newPriceUsd != null &&

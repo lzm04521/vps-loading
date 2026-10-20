@@ -47,13 +47,14 @@ impl Database {
                     buy_url: row.get(13)?,
                     region_cn: row.get(14)?,
                     vendor_name: row.get(15)?,
+                    unit: row.get(16)?,
                 })
             };
             let mut stmt = c.prepare(&format!(
                 "SELECT e.id, e.product_id, e.type, e.old_status, e.new_status,
                         e.old_price_usd, e.new_price_usd, e.created_at,
                         p.name, p.vendor_key, p.series_name, p.price, p.price_usd,
-                        p.buy_url, p.region_cn, v.name
+                        p.buy_url, p.region_cn, v.name, p.unit
                  FROM events e
                  JOIN products p ON p.id = e.product_id
                  JOIN vendors v ON v.key = p.vendor_key
@@ -123,5 +124,6 @@ mod tests {
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].event_type, "restock");
         assert_eq!(filtered[0].new_price_usd, Some(5.5));
+        assert_eq!(filtered[0].unit, "月");
     }
 }

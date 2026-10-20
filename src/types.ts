@@ -135,6 +135,7 @@ export interface EventView {
   buyUrl: string;
   regionCn: string;
   vendorName: string;
+  unit: string;
 }
 
 export interface PollView {

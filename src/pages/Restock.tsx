@@ -7,6 +7,7 @@ import { openExternal } from "../api/external";
 import { ipcErrorMessage } from "../i18n/errors";
 import { EventTag } from "../components/EventTag";
 import { formatDateTime, formatRelative } from "../time";
+import { priceWithUnit } from "../price";
 
 export default function Restock() {
   const { t } = useTranslation();
@@ -70,7 +71,7 @@ export default function Restock() {
                   </Typography.Text>
                 </span>
                 {e.regionCn && <Tag bordered={false}>{e.regionCn}</Tag>}
-                {e.currentPrice && <Tag bordered={false}>{e.currentPrice}</Tag>}
+                {e.currentPrice && <Tag bordered={false}>{priceWithUnit(e.currentPrice, e.unit)}</Tag>}
               </Space>
               <Typography.Text type="secondary">{formatRelative(e.createdAt)}</Typography.Text>
             </List.Item>

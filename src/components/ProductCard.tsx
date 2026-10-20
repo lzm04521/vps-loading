@@ -8,6 +8,7 @@ import { openExternal } from "../api/external";
 import { ipcErrorMessage } from "../i18n/errors";
 import { formatRelative } from "../time";
 import { pickSpecEntries, SPEC_GRID_SIZE, type SpecEntry } from "../spec";
+import { priceWithUnit } from "../price";
 
 /** 规格六宫格单格：emoji 图标 + 字段名（灰小字）+ 值（加粗），对应图1 样式 */
 function SpecCell({ icon, label, value }: SpecEntry) {
@@ -81,7 +82,12 @@ export function ProductCard({
     void openExternal(product.buyUrl).catch((e) => message.error(String(e)));
   };
 
-  const price = product.price || (product.priceUsd != null ? `$${product.priceUsd.toFixed(2)}` : "-");
+  // 空价回退美元折算价，折算参考价不带周期
+  const price = product.price
+    ? priceWithUnit(product.price, product.unit)
+    : product.priceUsd != null
+      ? `$${product.priceUsd.toFixed(2)}`
+      : "-";
 
   const specGrid = (
     <div

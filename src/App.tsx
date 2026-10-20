@@ -86,7 +86,12 @@ function AppLayout() {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <StartupUpdateCheck />
-      <Sider theme="dark" width={200}>
+      <Sider
+        theme="dark"
+        width={200}
+        // 长页面滚动时菜单钉在左侧；窗口过矮时菜单内部可滚
+        style={{ position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}
+      >
         <div
           style={{
             color: "#fff",
