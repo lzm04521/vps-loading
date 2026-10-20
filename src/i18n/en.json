@@ -45,7 +45,8 @@
   "channel": {
     "local": "Local (dashboard)",
     "telegram": "Telegram",
-    "webhook": "Webhook"
+    "webhook": "Webhook",
+    "windows": "Windows notification"
   },
   "dashboard": {
     "stats": {

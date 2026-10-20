@@ -208,6 +208,7 @@ export default function Rules() {
                   { value: "local", label: t("channel.local") },
                   { value: "telegram", label: t("channel.telegram") },
                   { value: "webhook", label: t("channel.webhook") },
+                  { value: "windows", label: t("channel.windows") },
                 ]}
               />
             </Form.Item>

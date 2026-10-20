@@ -38,6 +38,24 @@ impl StatusSink for IpcSink {
     }
 }
 
+/// Windows 原生通知出口（tauri-plugin-notification），供 windows 告警通道使用
+pub struct WindowsNotifier {
+    pub app: tauri::AppHandle,
+}
+
+impl crate::monitor::engine::Notifier for WindowsNotifier {
+    fn notify(&self, title: &str, body: &str) -> Result<(), String> {
+        use tauri_plugin_notification::NotificationExt;
+        self.app
+            .notification()
+            .builder()
+            .title(title)
+            .body(body)
+            .show()
+            .map_err(|e| format!("Windows 通知发送失败: {e}"))
+    }
+}
+
 fn ipc_err(code: &str, detail: impl std::fmt::Display) -> String {
     serde_json::json!({ "code": code, "detail": detail.to_string() }).to_string()
 }

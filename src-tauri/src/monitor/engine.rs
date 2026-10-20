@@ -20,6 +20,11 @@ pub trait StatusSink: Send + Sync {
     fn emit(&self, event: StatusEvent);
 }
 
+/// Windows 原生通知出口抽象（alerts 不感知 Tauri；测试注入假实现）
+pub trait Notifier: Send + Sync {
+    fn notify(&self, title: &str, body: &str) -> Result<(), String>;
+}
+
 /// 一次构造、全应用共享的依赖上下文（手工依赖注入容器）
 pub struct CollectCtx {
     pub config: Arc<ConfigStore>,
@@ -28,6 +33,8 @@ pub struct CollectCtx {
     pub sink: Arc<dyn StatusSink>,
     /// 告警通道复用的 HTTP 客户端
     pub http: reqwest::Client,
+    /// Windows 原生通知出口（windows 告警通道用）
+    pub notifier: Arc<dyn Notifier>,
 }
 
 /// 已落库、待告警处理的事件

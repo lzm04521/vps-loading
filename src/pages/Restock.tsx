@@ -3,6 +3,7 @@ import { App, Card, List, Select, Space, Tag, Typography } from "antd";
 import { useTranslation } from "react-i18next";
 import type { EventView, HistoryView } from "../types";
 import { eventsList, sourceHistoryList } from "../api/ipc";
+import { openExternal } from "../api/external";
 import { ipcErrorMessage } from "../i18n/errors";
 import { EventTag } from "../components/EventTag";
 import { formatDateTime, formatRelative } from "../time";
@@ -94,9 +95,9 @@ export default function Restock() {
               </Space>
               {h.buyUrl ? (
                 <Typography.Link
-                  href={h.buyUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                  onClick={() =>
+                    void openExternal(h.buyUrl).catch((e) => message.error(String(e)))
+                  }
                 >
                   {t("products.buy")}
                 </Typography.Link>

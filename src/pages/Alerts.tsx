@@ -10,6 +10,7 @@ const CHANNEL_COLORS: Record<string, string> = {
   local: "default",
   telegram: "blue",
   webhook: "purple",
+  windows: "green",
 };
 
 function statusTag(status: string, t: (k: string) => string) {

@@ -233,6 +233,13 @@ async fn send_webhook(
     )
 }
 
+async fn send_windows(ctx: &CollectCtx, message: &str) -> (String, Option<String>) {
+    match ctx.notifier.notify("VPS Monitor", message) {
+        Ok(()) => ("sent".into(), None),
+        Err(e) => ("failed".into(), Some(e)),
+    }
+}
+
 async fn dispatch(
     ctx: &CollectCtx,
     cfg: &AppConfig,
@@ -245,6 +252,7 @@ async fn dispatch(
         Channel::Local => ("local".into(), None),
         Channel::Telegram => send_telegram(ctx, cfg, message).await,
         Channel::Webhook => send_webhook(ctx, cfg, message, event, product).await,
+        Channel::Windows => send_windows(ctx, message).await,
     }
 }
 
@@ -337,6 +345,7 @@ pub fn telegram_ready(config: &ConfigStore) -> bool {
 mod tests {
     use super::*;
     use crate::store::catalog::ProductFull;
+    use std::sync::Arc;
 
     fn product() -> ProductFull {
         ProductFull {
@@ -451,5 +460,92 @@ mod tests {
             mask_secrets("url with bot123:SECRET_SECRET_SECRET inside", &["bot123:SECRET_SECRET_SECRET"]),
             "url with *** inside"
         );
+    }
+
+    #[tokio::test]
+    async fn windows_dispatch_routes_to_notifier() {
+        struct RecordingNotifier {
+            calls: std::sync::Mutex<Vec<(String, String)>>,
+            fail: bool,
+        }
+        impl crate::monitor::engine::Notifier for RecordingNotifier {
+            fn notify(&self, title: &str, body: &str) -> Result<(), String> {
+                if self.fail {
+                    return Err("系统通知被拒绝".into());
+                }
+                self.calls
+                    .lock()
+                    .unwrap()
+                    .push((title.into(), body.into()));
+                Ok(())
+            }
+        }
+        struct NoopSink;
+        impl crate::monitor::engine::StatusSink for NoopSink {
+            fn emit(&self, _event: crate::model::StatusEvent) {}
+        }
+
+        fn ctx_with(
+            dir: &std::path::Path,
+            notifier: Arc<RecordingNotifier>,
+        ) -> Arc<CollectCtx> {
+            let config = Arc::new(
+                ConfigStore::load_from(dir.join("config.json")).unwrap(),
+            );
+            let db = Arc::new(crate::store::Database::open(&dir.join("monitor.db")).unwrap());
+            Arc::new(CollectCtx {
+                config,
+                db,
+                provider: crate::provider::default_provider(),
+                sink: Arc::new(NoopSink),
+                http: reqwest::Client::new(),
+                notifier,
+            })
+        }
+
+        let event = PendingEvent {
+            event_id: 1,
+            product_id: 1,
+            event_type: EventType::Restock,
+            created_at: String::new(),
+        };
+        let product = product();
+
+        // 成功路径：调用记为 sent，标题固定为应用名
+        let ok_notifier = Arc::new(RecordingNotifier {
+            calls: std::sync::Mutex::new(Vec::new()),
+            fail: false,
+        });
+        {
+            let dir = tempfile::tempdir().unwrap();
+            let ctx = ctx_with(dir.path(), ok_notifier.clone());
+            let cfg = ctx.config.read();
+            let (status, error) =
+                dispatch(&ctx, &cfg, Channel::Windows, "测试消息", &event, &product).await;
+            assert_eq!(status, "sent");
+            assert!(error.is_none());
+            let calls = ok_notifier.calls.lock().unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(
+                calls[0],
+                ("VPS Monitor".to_string(), "测试消息".to_string())
+            );
+        }
+
+        // 失败路径：记为 failed 并携带错误信息
+        let fail_notifier = Arc::new(RecordingNotifier {
+            calls: std::sync::Mutex::new(Vec::new()),
+            fail: true,
+        });
+        {
+            let dir = tempfile::tempdir().unwrap();
+            let ctx = ctx_with(dir.path(), fail_notifier.clone());
+            let cfg = ctx.config.read();
+            let (status, error) =
+                dispatch(&ctx, &cfg, Channel::Windows, "测试消息", &event, &product).await;
+            assert_eq!(status, "failed");
+            assert!(error.as_deref().unwrap().contains("系统通知被拒绝"));
+            assert!(fail_notifier.calls.lock().unwrap().is_empty());
+        }
     }
 }

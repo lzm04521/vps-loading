@@ -48,16 +48,23 @@ pub enum Channel {
     Local,
     Telegram,
     Webhook,
+    Windows,
 }
 
 impl Channel {
-    pub const ALL: [Channel; 3] = [Channel::Local, Channel::Telegram, Channel::Webhook];
+    pub const ALL: [Channel; 4] = [
+        Channel::Local,
+        Channel::Telegram,
+        Channel::Webhook,
+        Channel::Windows,
+    ];
 
     pub fn as_str(&self) -> &'static str {
         match self {
             Channel::Local => "local",
             Channel::Telegram => "telegram",
             Channel::Webhook => "webhook",
+            Channel::Windows => "windows",
         }
     }
 

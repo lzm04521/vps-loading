@@ -168,7 +168,7 @@ export default function Products() {
       {page.items.length === 0 && !loading ? (
         <Card size="small">{t("products.noResults")}</Card>
       ) : (
-        <Row gutter={[12, 12]}>
+        <Row gutter={[12, 12]} align="stretch">
           {page.items.map((p) => (
             <Col key={p.id} xs={24} sm={12} lg={8} xl={6}>
               <ProductCard product={p} onWatchChanged={() => void reload()} />

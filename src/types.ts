@@ -16,7 +16,7 @@ export const ALL_EVENT_TYPES: EventType[] = [
   "new_product",
 ];
 
-export type Channel = "local" | "telegram" | "webhook";
+export type Channel = "local" | "telegram" | "webhook" | "windows";
 
 export interface AppSettings {
   autoStart: boolean;

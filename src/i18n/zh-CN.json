@@ -45,7 +45,8 @@
   "channel": {
     "local": "本地（看板）",
     "telegram": "Telegram",
-    "webhook": "Webhook"
+    "webhook": "Webhook",
+    "windows": "Windows 通知"
   },
   "dashboard": {
     "stats": {

@@ -1,10 +1,14 @@
-import { Card, Descriptions, Space, Tag, Typography } from "antd";
+import { App, Card, Descriptions, Space, Tag, Typography } from "antd";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
+import { openExternal } from "../api/external";
+
+const REPO_URL = "https://github.com/lzm04521/vps-loading";
 
 export default function About() {
   const { t } = useTranslation();
+  const { message } = App.useApp();
   const [version, setVersion] = useState<string>("");
 
   useEffect(() => {
@@ -25,9 +29,7 @@ export default function About() {
           </Descriptions.Item>
           <Descriptions.Item label={t("about.sourceRepo")}>
             <Typography.Link
-              href="https://github.com/lzm04521/vps-loading"
-              target="_blank"
-              rel="noreferrer"
+              onClick={() => void openExternal(REPO_URL).catch((e) => message.error(String(e)))}
             >
               github.com/lzm04521/vps-loading
             </Typography.Link>

@@ -34,6 +34,7 @@ pub fn run() {
         // 默认不注册插件——注册需同时在 tauri.conf.json 配 plugins.updater 端点。
         // 启用时：注册 tauri_plugin_updater::Builder::new().build() 并补配置。
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             let handle = app.handle().clone();
             let config_dir = handle
@@ -81,12 +82,16 @@ pub fn run() {
             }
 
             let sink: Arc<dyn StatusSink> = Arc::new(commands::IpcSink { app: handle.clone() });
+            let notifier: Arc<dyn monitor::engine::Notifier> = Arc::new(commands::WindowsNotifier {
+                app: handle.clone(),
+            });
             let ctx = Arc::new(CollectCtx {
                 config: config.clone(),
                 db: db.clone(),
                 provider: provider::default_provider(),
                 sink,
                 http: reqwest::Client::new(),
+                notifier,
             });
             let service = MonitorService::new(ctx);
 

@@ -174,6 +174,12 @@ mod tests {
     }
 
     fn test_ctx(dir: &std::path::Path) -> Arc<CollectCtx> {
+        struct NoopNotifier;
+        impl crate::monitor::engine::Notifier for NoopNotifier {
+            fn notify(&self, _title: &str, _body: &str) -> Result<(), String> {
+                Ok(())
+            }
+        }
         let config = Arc::new(ConfigStore::load_from(dir.join("config.json")).unwrap());
         let db = Arc::new(Database::open(&dir.join("monitor.db")).unwrap());
         let sink: Arc<dyn StatusSink> = Arc::new(CapturingSink(std::sync::Mutex::new(Vec::new())));
@@ -183,6 +189,7 @@ mod tests {
             provider: Arc::new(FailingProvider),
             sink,
             http: reqwest::Client::new(),
+            notifier: Arc::new(NoopNotifier),
         })
     }
 
