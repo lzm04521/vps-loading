@@ -15,6 +15,13 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 
 def main() -> int:
+    # CI 英文 Windows 控制台是 cp1252，中文输出会 UnicodeEncodeError
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError):
+            pass
+
     from vps_monitor.tray import icon_image
 
     assets = PROJECT_ROOT / "assets"
