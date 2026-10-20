@@ -25,26 +25,13 @@ from .autostart import is_enabled as autostart_is_enabled
 from .collector import Collector
 from .config import save_web_port
 from .db import Database
-from .web import create_app
+from .web import UVICORN_LOG_CONFIG, create_app
 
 log = logging.getLogger(__name__)
 
 MUTEX_NAME = "VpsMonitorSingleInstance"
 ERROR_ALREADY_EXISTS = 183
 _mutex_handle: Optional[int] = None
-
-# pythonw 下 sys.stdout 为 None，uvicorn 默认日志配置的 ColourizedFormatter
-# 会调用 sys.stdout.isatty() 直接崩溃；改为无 handler、上抛 root（文件日志）
-UVICORN_LOG_CONFIG: dict[str, Any] = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {},
-    "loggers": {
-        "uvicorn": {"handlers": [], "level": "WARNING", "propagate": True},
-        "uvicorn.error": {"handlers": [], "level": "WARNING", "propagate": True},
-        "uvicorn.access": {"handlers": [], "level": "CRITICAL", "propagate": False},
-    },
-}
 
 
 def acquire_single_instance() -> bool:

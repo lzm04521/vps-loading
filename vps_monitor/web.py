@@ -19,6 +19,20 @@ from .db import Database
 log = logging.getLogger(__name__)
 
 WEB_DIR = resource_root() / "web"
+
+# pythonw/打包 exe 下 sys.stdout 为 None，uvicorn 默认日志配置的
+# ColourizedFormatter 会调用 sys.stdout.isatty() 直接崩溃；
+# 改为无 handler、上抛 root（控制台/文件日志），run/serve/tray 共用
+UVICORN_LOG_CONFIG: dict[str, Any] = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {},
+    "loggers": {
+        "uvicorn": {"handlers": [], "level": "WARNING", "propagate": True},
+        "uvicorn.error": {"handlers": [], "level": "WARNING", "propagate": True},
+        "uvicorn.access": {"handlers": [], "level": "CRITICAL", "propagate": False},
+    },
+}
 VALID_EVENTS = {"restock", "soldout", "price_down", "price_up", "new_product"}
 VALID_CHANNELS = {"local", "telegram", "webhook"}
 

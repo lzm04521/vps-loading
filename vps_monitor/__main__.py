@@ -12,7 +12,7 @@ from . import __version__
 from .collector import Collector, run_loop
 from .config import ROOT, load_config, resolve_db_path
 from .db import Database
-from .web import create_app
+from .web import UVICORN_LOG_CONFIG, create_app
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +80,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _build_parser().parse_args(argv)
 
     if args.command is None:
-        args.command = "run"
+        # 双击打包 exe（无参数）默认进托盘模式；源码命令行默认 run
+        args.command = "tray" if getattr(sys, "frozen", False) else "run"
         args.config = None
         args.db = None
         args.host = None
@@ -132,7 +133,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     app = create_app(cfg, db, collector, start_collector=(command == "run"))
 
     log.info("Web 看板：http://%s:%s", "127.0.0.1" if host == "0.0.0.0" else host, port)
-    uvicorn.run(app, host=host, port=port, log_level="info", access_log=False)
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level="info",
+        access_log=False,
+        log_config=UVICORN_LOG_CONFIG,
+    )
     return 0
 
 
