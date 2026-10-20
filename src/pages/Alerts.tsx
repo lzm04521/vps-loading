@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { App, Card, Table, Tag } from "antd";
+import { App, Card, Table, Tag, Typography } from "antd";
 import { useTranslation } from "react-i18next";
 import type { AlertView, Channel } from "../types";
 import { alertsList } from "../api/ipc";
+import { openExternal } from "../api/external";
 import { ipcErrorMessage } from "../i18n/errors";
 import { formatDateTime } from "../time";
 
@@ -49,6 +50,7 @@ export default function Alerts() {
         dataSource={items}
         pagination={{ pageSize: 20, showSizeChanger: false }}
         locale={{ emptyText: t("common.empty") }}
+        scroll={{ x: 900 }}
         columns={[
           {
             title: t("common.time"),
@@ -81,6 +83,21 @@ export default function Alerts() {
             dataIndex: "error",
             ellipsis: true,
             responsive: ["lg"],
+          },
+          {
+            title: t("common.actions"),
+            width: 70,
+            fixed: "right",
+            render: (_, a) =>
+              a.buyUrl ? (
+                <Typography.Link
+                  onClick={() => void openExternal(a.buyUrl).catch((e) => message.error(String(e)))}
+                >
+                  {t("products.buy")}
+                </Typography.Link>
+              ) : (
+                "-"
+              ),
           },
         ]}
       />

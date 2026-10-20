@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { App, Button, Card, Col, Descriptions, Row, Space, Statistic, Table, Tag, Tooltip } from "antd";
+import { App, Button, Card, Col, Descriptions, Row, Space, Statistic, Table, Tag, Tooltip, Typography } from "antd";
 import { ReloadOutlined, SyncOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import type { EventView, SummaryView } from "../types";
 import { collectManual, eventsList, onStatusEvent, summaryGet } from "../api/ipc";
+import { openExternal } from "../api/external";
 import { ipcErrorMessage } from "../i18n/errors";
 import { EventTag } from "../components/EventTag";
 import { formatDateTime, formatRelative } from "../time";
@@ -180,6 +181,7 @@ export default function Dashboard() {
           dataSource={events}
           pagination={false}
           locale={{ emptyText: t("common.empty") }}
+          scroll={{ x: 800 }}
           columns={[
             {
               title: t("common.status"),
@@ -223,6 +225,21 @@ export default function Dashboard() {
                   <span>{formatRelative(v)}</span>
                 </Tooltip>
               ),
+            },
+            {
+              title: t("common.actions"),
+              width: 70,
+              fixed: "right",
+              render: (_, e) =>
+                e.buyUrl ? (
+                  <Typography.Link
+                    onClick={() => void openExternal(e.buyUrl).catch((err) => message.error(String(err)))}
+                  >
+                    {t("products.buy")}
+                  </Typography.Link>
+                ) : (
+                  "-"
+                ),
             },
           ]}
         />

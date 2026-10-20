@@ -73,7 +73,18 @@ export default function Restock() {
                 {e.regionCn && <Tag bordered={false}>{e.regionCn}</Tag>}
                 {e.currentPrice && <Tag bordered={false}>{priceWithUnit(e.currentPrice, e.unit)}</Tag>}
               </Space>
-              <Typography.Text type="secondary">{formatRelative(e.createdAt)}</Typography.Text>
+              <Space size={8}>
+                <Typography.Text type="secondary">{formatRelative(e.createdAt)}</Typography.Text>
+                {e.buyUrl && (
+                  <Typography.Link
+                    onClick={() =>
+                      void openExternal(e.buyUrl).catch((err) => message.error(String(err)))
+                    }
+                  >
+                    {t("products.buy")}
+                  </Typography.Link>
+                )}
+              </Space>
             </List.Item>
           )}
         />
