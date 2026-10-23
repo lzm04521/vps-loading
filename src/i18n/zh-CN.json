@@ -209,7 +209,8 @@
       "webhookUrl": "Webhook URL",
       "ntfy": "ntfy",
       "ntfyServerUrl": "服务地址",
-      "ntfyTopic": "Topic"
+      "ntfyTopic": "Topic",
+      "token": "Token"
     },
     "app": {
       "title": "应用",

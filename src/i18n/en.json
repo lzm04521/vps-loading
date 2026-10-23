@@ -209,7 +209,8 @@
       "webhookUrl": "Webhook URL",
       "ntfy": "ntfy",
       "ntfyServerUrl": "Server URL",
-      "ntfyTopic": "Topic"
+      "ntfyTopic": "Topic",
+      "token": "Token"
     },
     "app": {
       "title": "Application",

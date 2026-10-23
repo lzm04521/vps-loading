@@ -21,7 +21,7 @@ import Polls from "./pages/Polls";
 import Products from "./pages/Products";
 import Restock from "./pages/Restock";
 import Rules from "./pages/Rules";
-import Settings from "./pages/Settings";
+import Settings from "./pages/settings";
 
 const { Sider, Header, Content } = Layout;
 
