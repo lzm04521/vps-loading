@@ -89,7 +89,6 @@
     "title": "Inventory",
     "searchPlaceholder": "Search plan / vendor / route / promo code",
     "vendor": "Vendor",
-    "allVendors": "All vendors",
     "region": "Region",
     "allRegions": "All regions",
     "maxPrice": "Max price (USD)",
