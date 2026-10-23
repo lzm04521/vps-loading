@@ -84,6 +84,15 @@ export default function Restock() {
                     {t("products.buy")}
                   </Typography.Link>
                 )}
+                {e.blogUrl && (
+                  <Typography.Link
+                    onClick={() =>
+                      void openExternal(e.blogUrl).catch((err) => message.error(String(err)))
+                    }
+                  >
+                    {t("products.review")}
+                  </Typography.Link>
+                )}
               </Space>
             </List.Item>
           )}

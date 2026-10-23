@@ -233,18 +233,28 @@ export default function Dashboard() {
             },
             {
               title: t("common.actions"),
-              width: 70,
+              width: 110,
               fixed: "right",
-              render: (_, e) =>
-                e.buyUrl ? (
-                  <Typography.Link
-                    onClick={() => void openExternal(e.buyUrl).catch((err) => message.error(String(err)))}
-                  >
-                    {t("products.buy")}
-                  </Typography.Link>
-                ) : (
-                  "-"
-                ),
+              render: (_, e) => (
+                <Space size={12}>
+                  {e.buyUrl ? (
+                    <Typography.Link
+                      onClick={() => void openExternal(e.buyUrl).catch((err) => message.error(String(err)))}
+                    >
+                      {t("products.buy")}
+                    </Typography.Link>
+                  ) : (
+                    <span>-</span>
+                  )}
+                  {e.blogUrl && (
+                    <Typography.Link
+                      onClick={() => void openExternal(e.blogUrl).catch((err) => message.error(String(err)))}
+                    >
+                      {t("products.review")}
+                    </Typography.Link>
+                  )}
+                </Space>
+              ),
             },
           ]}
         />

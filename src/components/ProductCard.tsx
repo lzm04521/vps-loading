@@ -182,11 +182,25 @@ export function ProductCard({
         <span>
           {t("products.lastChange")}: {formatRelative(product.lastChange ?? product.firstSeen)}
         </span>
-        {product.buyUrl && (
-          <Button type="link" size="small" style={{ padding: 0 }} onClick={openBuy}>
-            {t("products.buy")}
-          </Button>
-        )}
+        <Space size={12}>
+          {product.buyUrl && (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={openBuy}>
+              {t("products.buy")}
+            </Button>
+          )}
+          {product.blogUrl && (
+            <Button
+              type="link"
+              size="small"
+              style={{ padding: 0 }}
+              onClick={() =>
+                void openExternal(product.blogUrl).catch((e) => message.error(String(e)))
+              }
+            >
+              {t("products.review")}
+            </Button>
+          )}
+        </Space>
       </div>
     </Card>
   );
