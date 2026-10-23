@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { App, Card, Table, Tag, Typography } from "antd";
+import { App, Button, Card, Popconfirm, Space, Table, Tag, Typography } from "antd";
 import { useTranslation } from "react-i18next";
 import type { AlertView, Channel } from "../types";
-import { alertsList } from "../api/ipc";
+import { alertDelete, alertsClear, alertsList } from "../api/ipc";
 import { openExternal } from "../api/external";
 import { ipcErrorMessage } from "../i18n/errors";
 import { formatDateTime } from "../time";
@@ -26,6 +26,7 @@ export default function Alerts() {
   const { message } = App.useApp();
   const [items, setItems] = useState<AlertView[]>([]);
   const [loading, setLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -42,8 +43,40 @@ export default function Alerts() {
     void reload();
   }, [reload]);
 
+  const delAlert = async (id: number) => {
+    try {
+      await alertDelete(id);
+      await reload();
+    } catch (e) {
+      message.error(ipcErrorMessage(e, t));
+    }
+  };
+
+  const clearAll = async () => {
+    setClearing(true);
+    try {
+      const count = await alertsClear();
+      message.success(t("alerts.cleared", { count }));
+      await reload();
+    } catch (e) {
+      message.error(ipcErrorMessage(e, t));
+    } finally {
+      setClearing(false);
+    }
+  };
+
   return (
-    <Card size="small" title={t("alerts.title")}>
+    <Card
+      size="small"
+      title={t("alerts.title")}
+      extra={
+        <Popconfirm title={t("alerts.clearConfirm")} onConfirm={() => void clearAll()}>
+          <Button danger size="small" loading={clearing}>
+            {t("alerts.clear")}
+          </Button>
+        </Popconfirm>
+      }
+    >
       <Table<AlertView>
         rowKey="id"
         size="small"
@@ -87,18 +120,24 @@ export default function Alerts() {
           },
           {
             title: t("common.actions"),
-            width: 70,
+            width: 110,
             fixed: "right",
-            render: (_, a) =>
-              a.buyUrl ? (
-                <Typography.Link
-                  onClick={() => void openExternal(a.buyUrl).catch((e) => message.error(String(e)))}
-                >
-                  {t("products.buy")}
-                </Typography.Link>
-              ) : (
-                "-"
-              ),
+            render: (_, a) => (
+              <Space size={12}>
+                {a.buyUrl ? (
+                  <Typography.Link
+                    onClick={() => void openExternal(a.buyUrl).catch((e) => message.error(String(e)))}
+                  >
+                    {t("products.buy")}
+                  </Typography.Link>
+                ) : (
+                  <span>-</span>
+                )}
+                <Popconfirm title={t("alerts.deleteConfirm")} onConfirm={() => void delAlert(a.id)}>
+                  <Typography.Link type="danger">{t("common.delete")}</Typography.Link>
+                </Popconfirm>
+              </Space>
+            ),
           },
         ]}
       />
