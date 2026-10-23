@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { App, Button, Card, Divider, Form, Input, Typography } from "antd";
+import { App, Button, Card, Divider, Form, Input, Space, Typography } from "antd";
 import { useTranslation } from "react-i18next";
-import type { ConfigInput, ConfigView } from "../../types";
-import { configUpdate } from "../../api/ipc";
+import type { ConfigInput, ConfigView, NotifyTestResult } from "../../types";
+import { configUpdate, notifyTest } from "../../api/ipc";
 import { ipcErrorMessage } from "../../i18n/errors";
 
 interface NotifyValues {
@@ -34,10 +34,11 @@ export function NotifySection({
   config: ConfigView | null;
   onSaved: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { message } = App.useApp();
   const [form] = Form.useForm<NotifyValues>();
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (config) {
@@ -52,29 +53,102 @@ export function NotifySection({
     }
   }, [config, form]);
 
+  /** 组装并提交配置（不弹消息），返回保存后的最新配置 */
+  const persist = async (v: NotifyValues): Promise<ConfigView> => {
+    const input: ConfigInput = {
+      telegramChatId: v.telegramChatId.trim(),
+      webhookUrl: v.webhookUrl.trim(),
+      ntfyServerUrl: v.ntfyServerUrl.trim(),
+      ntfyTopic: v.ntfyTopic.trim(),
+    };
+    // 只在用户输入了 token 时提交（空串=清除，留空=不改）
+    if (v.telegramToken.trim() !== "") {
+      input.telegramToken = v.telegramToken.trim();
+    }
+    if (v.ntfyToken.trim() !== "") {
+      input.ntfyToken = v.ntfyToken.trim();
+    }
+    return configUpdate(input);
+  };
+
   const save = async (v: NotifyValues) => {
     setSaving(true);
     try {
-      const input: ConfigInput = {
-        telegramChatId: v.telegramChatId.trim(),
-        webhookUrl: v.webhookUrl.trim(),
-        ntfyServerUrl: v.ntfyServerUrl.trim(),
-        ntfyTopic: v.ntfyTopic.trim(),
-      };
-      // 只在用户输入了 token 时提交（空串=清除，留空=不改）
-      if (v.telegramToken.trim() !== "") {
-        input.telegramToken = v.telegramToken.trim();
-      }
-      if (v.ntfyToken.trim() !== "") {
-        input.ntfyToken = v.ntfyToken.trim();
-      }
-      await configUpdate(input);
+      await persist(v);
       message.success(t("settings.saved"));
       onSaved();
     } catch (e) {
       message.error(ipcErrorMessage(e, t));
     } finally {
       setSaving(false);
+    }
+  };
+
+  /** 测试通知：先静默保存表单（测刚填的值），再对已配置通道各发一条，汇总结果 */
+  const test = async () => {
+    let values: NotifyValues;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return; // 校验失败由表单自行标红
+    }
+    setTesting(true);
+    try {
+      const saved = await persist(values);
+      onSaved();
+      const groups = [
+        {
+          channel: "telegram",
+          label: t("settings.notify.telegram"),
+          ready: saved.telegramTokenSet && saved.telegramChatId.trim() !== "",
+        },
+        {
+          channel: "webhook",
+          label: t("settings.notify.webhook"),
+          ready: saved.webhookUrl.trim() !== "",
+        },
+        {
+          channel: "ntfy",
+          label: t("settings.notify.ntfy"),
+          ready:
+            saved.ntfyTokenSet &&
+            saved.ntfyServerUrl.trim() !== "" &&
+            saved.ntfyTopic.trim() !== "",
+        },
+      ].filter((g) => g.ready);
+      if (groups.length === 0) {
+        message.warning(t("settings.notify.testNoneConfigured"));
+        return;
+      }
+      const results = await Promise.all(
+        groups.map(async (g) => {
+          let result: NotifyTestResult;
+          try {
+            result = await notifyTest(g.channel);
+          } catch (e) {
+            result = { status: "failed", error: ipcErrorMessage(e, t) };
+          }
+          return { ...g, result };
+        }),
+      );
+      const sep = i18n.language === "zh-CN" ? "、" : ", ";
+      const okLabels = results.filter((r) => r.result.status === "sent").map((r) => r.label);
+      if (okLabels.length > 0) {
+        message.success(t("settings.notify.testSent", { channels: okLabels.join(sep) }));
+      }
+      for (const r of results.filter((x) => x.result.status !== "sent")) {
+        message.error(
+          t("settings.notify.testFailed", {
+            channel: r.label,
+            error: r.result.error || "-",
+          }),
+        );
+      }
+    } catch (e) {
+      // 保存失败等异常
+      message.error(ipcErrorMessage(e, t));
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -119,9 +193,14 @@ export function NotifySection({
           />
         </Form.Item>
 
-        <Button type="primary" htmlType="submit" loading={saving}>
-          {t("common.save")}
-        </Button>
+        <Space>
+          <Button type="primary" htmlType="submit" loading={saving}>
+            {t("common.save")}
+          </Button>
+          <Button onClick={() => void test()} loading={testing}>
+            {t("settings.notify.testButton")}
+          </Button>
+        </Space>
       </Form>
     </Card>
   );

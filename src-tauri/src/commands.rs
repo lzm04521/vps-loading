@@ -9,8 +9,8 @@ use crate::config::ConfigStore;
 use crate::logging::LogReloadHandle;
 use crate::model::{
     AppConfig, AppSettings, Channel, CollectResult, ConfigInput, ConfigView, EventType,
-    LegacyImportReport, PollView, ProductPage, ProductQuery, RegionStat, Rule, RuleInput,
-    StatusEvent, SummaryView, VendorStat, EventView, AlertView, HistoryView,
+    LegacyImportReport, NotifyTestResult, PollView, ProductPage, ProductQuery, RegionStat, Rule,
+    RuleInput, StatusEvent, SummaryView, VendorStat, EventView, AlertView, HistoryView,
 };
 use crate::monitor::alerts;
 use crate::monitor::engine::StatusSink;
@@ -185,8 +185,19 @@ fn validate_rule(input: &RuleInput) -> Result<(), String> {
             return Err(ipc_err("RULE_INVALID", format!("未知事件类型：{t}")));
         }
     }
-    if Channel::parse(&input.channel).is_none() {
-        return Err(ipc_err("RULE_INVALID", format!("未知通道：{}", input.channel)));
+    let channels: Vec<&str> = input
+        .channel
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+    if channels.is_empty() {
+        return Err(ipc_err("RULE_INVALID", "至少选择一个通知通道"));
+    }
+    for c in &channels {
+        if Channel::parse(c).is_none() {
+            return Err(ipc_err("RULE_INVALID", format!("未知通道：{c}")));
+        }
     }
     if !(0..=1440).contains(&input.cooldown_minutes) {
         return Err(ipc_err("RULE_INVALID", "冷却分钟须在 0~1440 之间"));
@@ -241,6 +252,21 @@ pub async fn collect_manual(
 ) -> Result<CollectResult, String> {
     let service = state.service.clone();
     Ok(service.collect(force.unwrap_or(false)).await)
+}
+
+// ---------- 通知测试 ----------
+
+/// 用已保存配置向指定通道发送一条测试通知；发送失败在返回值中体现，不算命令失败
+#[tauri::command]
+pub async fn notify_test(
+    state: State<'_, AppState>,
+    channel: String,
+) -> Result<NotifyTestResult, String> {
+    let channel = Channel::parse(&channel)
+        .ok_or_else(|| ipc_err("CHANNEL_INVALID", format!("未知通知通道：{channel}")))?;
+    let service = state.service.clone();
+    let (status, error) = service.send_test(channel).await;
+    Ok(NotifyTestResult { status, error })
 }
 
 // ---------- 配置 ----------
@@ -487,10 +513,10 @@ mod tests {
     #[test]
     fn rule_validation() {
         assert!(validate_rule(&input()).is_ok());
-        // 多事件类型、telegram 通道合法
+        // 多事件类型、多通道（逗号分隔）合法
         let mut r = input();
         r.event_types = "restock, price_down,price_up".into();
-        r.channel = "telegram".into();
+        r.channel = "telegram,ntfy".into();
         assert!(validate_rule(&r).is_ok());
 
         // ntfy 通道合法
@@ -510,6 +536,12 @@ mod tests {
         assert!(validate_rule(&r).is_err());
         let mut r = input();
         r.channel = "sms".into();
+        assert!(validate_rule(&r).is_err());
+        let mut r = input();
+        r.channel = "telegram,bogus".into();
+        assert!(validate_rule(&r).unwrap_err().contains("RULE_INVALID"));
+        let mut r = input();
+        r.channel = " , ".into();
         assert!(validate_rule(&r).is_err());
         let mut r = input();
         r.cooldown_minutes = 1441;

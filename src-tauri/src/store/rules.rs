@@ -178,11 +178,13 @@ mod tests {
         input.event_types = "restock,price_down".into();
         input.region_like = Some("日本".into());
         input.max_price_usd = Some(10.0);
-        input.channel = "telegram".into();
+        input.channel = "telegram,ntfy".into();
 
         let rule = db.create_rule(&input).unwrap();
         assert!(rule.id > 1);
         assert_eq!(rule.name, "日本低价");
+        // 多通道逗号串原样存取
+        assert_eq!(rule.channel, "telegram,ntfy");
 
         input.name = "日本低价 v2".into();
         input.enabled = false;
@@ -190,6 +192,7 @@ mod tests {
         assert_eq!(updated.name, "日本低价 v2");
         assert!(!updated.enabled);
         assert_eq!(updated.max_price_usd, Some(10.0));
+        assert_eq!(updated.channel, "telegram,ntfy");
 
         assert!(db.delete_rule(rule.id).unwrap());
         assert!(!db.delete_rule(rule.id).unwrap());

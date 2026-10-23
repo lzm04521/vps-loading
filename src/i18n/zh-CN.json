@@ -209,7 +209,11 @@
       "ntfy": "ntfy",
       "ntfyServerUrl": "服务地址",
       "ntfyTopic": "Topic",
-      "token": "Token"
+      "token": "Token",
+      "testButton": "发送测试通知",
+      "testNoneConfigured": "请先配置并保存至少一个告警通道",
+      "testSent": "测试通知已发送：{{channels}}",
+      "testFailed": "{{channel}} 测试失败：{{error}}"
     },
     "app": {
       "title": "应用",
@@ -268,6 +272,7 @@
     "LEGACY_CONFIG_CORRUPT": "旧配置文件损坏：{{detail}}",
     "LEGACY_DB_CONFLICT": "{{detail}}",
     "LEGACY_DB_IMPORT_FAILED": "导入旧数据库失败：{{detail}}",
-    "ALERT_NOT_FOUND": "告警记录不存在"
+    "ALERT_NOT_FOUND": "告警记录不存在",
+    "CHANNEL_INVALID": "未知通知通道：{{detail}}"
   }
 }

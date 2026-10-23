@@ -261,6 +261,12 @@ export interface LegacyImportReport {
   detail: string[];
 }
 
+/** 通知测试结果：status 为 sent/failed，发送失败不算命令失败 */
+export interface NotifyTestResult {
+  status: string;
+  error: string | null;
+}
+
 /** 后端 monitor://status 事件载荷 */
 export interface StatusEvent {
   state: "running" | "done" | "error" | "skipped" | string;

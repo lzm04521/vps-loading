@@ -143,6 +143,7 @@ pub fn run() {
             commands::rule_update,
             commands::rule_delete,
             commands::collect_manual,
+            commands::notify_test,
             commands::config_get,
             commands::config_update,
             commands::legacy_import,

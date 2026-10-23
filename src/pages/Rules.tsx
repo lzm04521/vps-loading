@@ -17,7 +17,7 @@ interface FormValues {
   maxPriceUsd?: number | null;
   onlyWatchlist: boolean;
   enabled: boolean;
-  channel: string;
+  channels: string[];
   cooldownMinutes: number;
 }
 
@@ -32,7 +32,7 @@ const emptyValues: FormValues = {
   maxPriceUsd: null,
   onlyWatchlist: false,
   enabled: true,
-  channel: "local",
+  channels: ["local"],
   cooldownMinutes: 30,
 };
 
@@ -71,7 +71,7 @@ export default function Rules() {
     minPriceUsd: v.minPriceUsd ?? null,
     maxPriceUsd: v.maxPriceUsd ?? null,
     onlyWatchlist: v.onlyWatchlist,
-    channel: v.channel,
+    channel: v.channels.join(","),
     cooldownMinutes: v.cooldownMinutes,
   });
 
@@ -109,7 +109,7 @@ export default function Rules() {
       maxPriceUsd: rule.maxPriceUsd,
       onlyWatchlist: rule.onlyWatchlist,
       enabled: rule.enabled,
-      channel: rule.channel,
+      channels: rule.channel.split(",").map((s) => s.trim()).filter(Boolean),
       cooldownMinutes: rule.cooldownMinutes,
     });
   };
@@ -201,9 +201,10 @@ export default function Rules() {
             <Form.Item name="maxPriceUsd" label={t("rules.maxPrice")}>
               <InputNumber min={0} step={0.01} style={{ width: 120 }} />
             </Form.Item>
-            <Form.Item name="channel" label={t("rules.channel")}>
+            <Form.Item name="channels" label={t("rules.channel")} rules={[{ required: true }]}>
               <Select
-                style={{ width: 160 }}
+                mode="multiple"
+                style={{ minWidth: 260 }}
                 options={[
                   { value: "local", label: t("channel.local") },
                   { value: "telegram", label: t("channel.telegram") },
@@ -280,8 +281,18 @@ export default function Rules() {
             {
               title: t("rules.colChannel"),
               dataIndex: "channel",
-              width: 130,
-              render: (c: string) => t(`channel.${c}`),
+              width: 170,
+              render: (c: string) => (
+                <Space size={4} wrap>
+                  {c
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .map((ch) => (
+                      <Tag key={ch}>{t(`channel.${ch}`)}</Tag>
+                    ))}
+                </Space>
+              ),
             },
             { title: t("rules.colCooldown"), dataIndex: "cooldownMinutes", width: 90 },
             {

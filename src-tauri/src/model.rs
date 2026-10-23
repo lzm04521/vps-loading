@@ -167,7 +167,8 @@ impl Default for AppSettings {
 
 // ---------- 规则 ----------
 
-/// 规则完整视图（IPC 出参 / DB 行）。event_types 为逗号分隔串（沿用旧库存储格式）。
+/// 规则完整视图（IPC 出参 / DB 行）。event_types / channel 均为逗号分隔串
+/// （channel 多选沿用 event_types 的存储格式，旧库单值天然兼容）。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
@@ -446,6 +447,14 @@ pub struct ConfigInput {
     pub ntfy_topic: Option<String>,
     pub ntfy_token: Option<String>,
     pub settings: Option<AppSettings>,
+}
+
+/// 通知测试结果：status 为 "sent"/"failed"（发送失败不算命令失败，错误回传前端展示）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotifyTestResult {
+    pub status: String,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Default)]

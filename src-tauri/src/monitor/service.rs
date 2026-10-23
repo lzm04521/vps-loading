@@ -51,6 +51,12 @@ impl MonitorService {
         self.last_result.lock().expect("last_result lock poisoned").clone()
     }
 
+    /// 通知设置页"发送测试通知"：用已保存配置向指定通道发一条测试消息
+    pub async fn send_test(&self, channel: crate::model::Channel) -> (String, Option<String>) {
+        let cfg = self.ctx.config.read();
+        alerts::send_test(&self.ctx, &cfg, channel).await
+    }
+
     fn emit(&self, state: &str, message: &str) {
         self.ctx.sink.emit(StatusEvent {
             state: state.into(),

@@ -209,7 +209,11 @@
       "ntfy": "ntfy",
       "ntfyServerUrl": "Server URL",
       "ntfyTopic": "Topic",
-      "token": "Token"
+      "token": "Token",
+      "testButton": "Send test notification",
+      "testNoneConfigured": "Configure and save at least one alert channel first",
+      "testSent": "Test notification sent: {{channels}}",
+      "testFailed": "{{channel}} test failed: {{error}}"
     },
     "app": {
       "title": "Application",
@@ -268,6 +272,7 @@
     "LEGACY_CONFIG_CORRUPT": "Legacy config is corrupted: {{detail}}",
     "LEGACY_DB_CONFLICT": "{{detail}}",
     "LEGACY_DB_IMPORT_FAILED": "Failed to import legacy database: {{detail}}",
-    "ALERT_NOT_FOUND": "Alert record not found"
+    "ALERT_NOT_FOUND": "Alert record not found",
+    "CHANNEL_INVALID": "Unknown notification channel: {{detail}}"
   }
 }

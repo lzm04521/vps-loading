@@ -13,6 +13,23 @@ fn non_empty(s: &Option<String>) -> Option<&str> {
     s.as_deref().filter(|v| !v.is_empty())
 }
 
+/// 规则的通道列表（逗号分隔，与 event_types 同构）：trim、过滤空与非法项、保序去重；
+/// 解析结果为空时兜底本地通道（兼容旧库单值与脏数据）。
+pub fn parse_channels(s: &str) -> Vec<Channel> {
+    let mut out: Vec<Channel> = Vec::new();
+    for part in s.split(',').map(str::trim).filter(|p| !p.is_empty()) {
+        if let Some(c) = Channel::parse(part)
+            && !out.contains(&c)
+        {
+            out.push(c);
+        }
+    }
+    if out.is_empty() {
+        out.push(Channel::Local);
+    }
+    out
+}
+
 fn contains(haystack: &str, needle: &str) -> bool {
     haystack.to_lowercase().contains(&needle.to_lowercase())
 }
@@ -335,6 +352,53 @@ async fn dispatch(
     }
 }
 
+/// webhook 测试通知的占位产品（payload 结构与真实告警一致，text 字段标明测试）
+fn test_payload_product() -> ProductFull {
+    ProductFull {
+        id: 0,
+        vendor_key: "test".into(),
+        vendor_name: "vps-loading".into(),
+        series_name: String::new(),
+        name: "测试通知（非真实产品）".into(),
+        price: String::new(),
+        price_usd: None,
+        region: String::new(),
+        region_cn: String::new(),
+        route: String::new(),
+        unit: String::new(),
+        promo: String::new(),
+        buy_url: String::new(),
+        status: 1,
+        watched: false,
+    }
+}
+
+/// 用已保存配置向指定通道发送一条测试通知（不落告警库）。
+/// 与真实告警走完全相同的发送链路，返回一致的 (status, error)。
+pub async fn send_test(
+    ctx: &CollectCtx,
+    cfg: &AppConfig,
+    channel: Channel,
+) -> (String, Option<String>) {
+    let message = "🔔 vps-loading 测试通知\n这是一条测试消息，收到即说明该通道配置有效。";
+    match channel {
+        Channel::Local => ("local".into(), None),
+        Channel::Telegram => send_telegram(ctx, cfg, message).await,
+        Channel::Webhook => {
+            let event = PendingEvent {
+                event_id: 0,
+                product_id: 0,
+                event_type: EventType::NewProduct,
+                created_at: crate::model::utcnow_iso(),
+            };
+            let product = test_payload_product();
+            send_webhook(ctx, cfg, message, &event, &product).await
+        }
+        Channel::Windows => send_windows(ctx, message).await,
+        Channel::Ntfy => send_ntfy(ctx, cfg, message, EventType::NewProduct).await,
+    }
+}
+
 /// 对事件套用启用的规则，命中后发送告警并落库；返回处理条数。
 /// 由 service 在采集事务提交后异步 spawn 调用，不阻塞下一次采集。
 pub async fn process_events(ctx: &CollectCtx, events: &[PendingEvent]) -> usize {
@@ -384,28 +448,31 @@ pub async fn process_events(ctx: &CollectCtx, events: &[PendingEvent]) -> usize 
             }
 
             let message = build_message(event.event_type, &product);
-            let channel = Channel::parse(&rule.channel).unwrap_or(Channel::Local);
-            let (status, error) = dispatch(ctx, &cfg, channel, &message, event, &product).await;
-            if status == "failed" {
-                tracing::warn!(
-                    "告警发送失败 rule={} product={}: {}",
-                    rule.id,
-                    product.id,
-                    error.as_deref().unwrap_or("未知错误")
-                );
+            // 通道可多选：逐通道发送，各落一条记录（保留每通道的成败状态）
+            for channel in parse_channels(&rule.channel) {
+                let (status, error) = dispatch(ctx, &cfg, channel, &message, event, &product).await;
+                if status == "failed" {
+                    tracing::warn!(
+                        "告警发送失败 rule={} product={} channel={}: {}",
+                        rule.id,
+                        product.id,
+                        channel.as_str(),
+                        error.as_deref().unwrap_or("未知错误")
+                    );
+                }
+                if let Err(e) = ctx.db.insert_alert(&crate::store::alerts::AlertRecord {
+                    event_id: event.event_id,
+                    rule_id: rule.id,
+                    product_id: product.id,
+                    channel: channel.as_str(),
+                    message: &message,
+                    status: &status,
+                    error: error.as_deref(),
+                }) {
+                    tracing::warn!("记录告警失败: {e}");
+                }
+                handled += 1;
             }
-            if let Err(e) = ctx.db.insert_alert(&crate::store::alerts::AlertRecord {
-                event_id: event.event_id,
-                rule_id: rule.id,
-                product_id: product.id,
-                channel: channel.as_str(),
-                message: &message,
-                status: &status,
-                error: error.as_deref(),
-            }) {
-                tracing::warn!("记录告警失败: {e}");
-            }
-            handled += 1;
         }
     }
     handled
@@ -601,47 +668,135 @@ mod tests {
         );
     }
 
+    struct RecordingNotifier {
+        calls: std::sync::Mutex<Vec<(String, String)>>,
+        fail: bool,
+    }
+    impl crate::monitor::engine::Notifier for RecordingNotifier {
+        fn notify(&self, title: &str, body: &str) -> Result<(), String> {
+            if self.fail {
+                return Err("系统通知被拒绝".into());
+            }
+            self.calls
+                .lock()
+                .unwrap()
+                .push((title.into(), body.into()));
+            Ok(())
+        }
+    }
+    struct NoopSink;
+    impl crate::monitor::engine::StatusSink for NoopSink {
+        fn emit(&self, _event: crate::model::StatusEvent) {}
+    }
+
+    fn ctx_with(dir: &std::path::Path, notifier: Arc<RecordingNotifier>) -> Arc<CollectCtx> {
+        let config = Arc::new(
+            ConfigStore::load_from(dir.join("config.json")).unwrap(),
+        );
+        let db = Arc::new(crate::store::Database::open(&dir.join("monitor.db")).unwrap());
+        Arc::new(CollectCtx {
+            config,
+            db,
+            provider: crate::provider::default_provider(),
+            sink: Arc::new(NoopSink),
+            http: reqwest::Client::new(),
+            notifier,
+        })
+    }
+
+    #[test]
+    fn parse_channels_variants() {
+        use Channel as C;
+        // 旧库单值
+        assert_eq!(parse_channels("telegram"), vec![C::Telegram]);
+        // 多值 + trim
+        assert_eq!(parse_channels("windows, local"), vec![C::Windows, C::Local]);
+        // 保序去重
+        assert_eq!(
+            parse_channels("ntfy,ntfy, telegram"),
+            vec![C::Ntfy, C::Telegram]
+        );
+        // 非法项过滤
+        assert_eq!(parse_channels("bogus, webhook"), vec![C::Webhook]);
+        // 空 / 全非法 → 本地兜底
+        assert_eq!(parse_channels(""), vec![C::Local]);
+        assert_eq!(parse_channels(" , , "), vec![C::Local]);
+        assert_eq!(parse_channels("bogus"), vec![C::Local]);
+    }
+
+    #[tokio::test]
+    async fn process_events_multi_channel_dispatches_each() {
+        use crate::monitor::diff::EventDraft;
+        use crate::monitor::normalize::test_util;
+        use crate::store::catalog;
+        use crate::store::rules;
+
+        let dir = tempfile::tempdir().unwrap();
+        let notifier = Arc::new(RecordingNotifier {
+            calls: std::sync::Mutex::new(Vec::new()),
+            fail: false,
+        });
+        let ctx = ctx_with(dir.path(), notifier.clone());
+
+        // 清掉播种的默认规则，建一条多通道规则（含重复项与非法项）
+        for r in ctx.db.list_rules(false).unwrap() {
+            ctx.db.delete_rule(r.id).unwrap();
+        }
+        let mut input = rules::default_seed_input();
+        input.event_types = "restock".into();
+        input.channel = "windows, local, windows, bogus".into();
+        input.cooldown_minutes = 0;
+        let rule = ctx.db.create_rule(&input).unwrap();
+
+        // 播种产品与事件
+        let at = crate::model::utcnow_iso();
+        let draft = test_util::sample_product_draft();
+        let (product_id, event_id) = ctx
+            .db
+            .with_tx(|tx| {
+                catalog::upsert_vendor(tx, "vultr", "Vultr", "")?;
+                catalog::upsert_series(tx, "vultr", "默认", "默认", "东京")?;
+                let pid = catalog::insert_product(tx, &draft, &at)?;
+                let eid = crate::store::events::insert(
+                    tx,
+                    &EventDraft {
+                        product_id: pid,
+                        event_type: EventType::Restock,
+                        old_status: Some(0),
+                        new_status: Some(1),
+                        old_price_usd: None,
+                        new_price_usd: Some(5.5),
+                    },
+                    &at,
+                )?;
+                Ok((pid, eid))
+            })
+            .unwrap();
+
+        let handled = process_events(
+            &ctx,
+            &[PendingEvent {
+                event_id,
+                product_id,
+                event_type: EventType::Restock,
+                created_at: at,
+            }],
+        )
+        .await;
+
+        // windows + local 各派发一次（重复/非法项被过滤）
+        assert_eq!(handled, 2);
+        assert_eq!(notifier.calls.lock().unwrap().len(), 1);
+
+        let alerts = ctx.db.list_alerts(10).unwrap();
+        let mut channels: Vec<&str> = alerts.iter().map(|a| a.channel.as_str()).collect();
+        channels.sort_unstable();
+        assert_eq!(channels, vec!["local", "windows"]);
+        assert!(alerts.iter().all(|a| a.rule_id == rule.id));
+    }
+
     #[tokio::test]
     async fn windows_dispatch_routes_to_notifier() {
-        struct RecordingNotifier {
-            calls: std::sync::Mutex<Vec<(String, String)>>,
-            fail: bool,
-        }
-        impl crate::monitor::engine::Notifier for RecordingNotifier {
-            fn notify(&self, title: &str, body: &str) -> Result<(), String> {
-                if self.fail {
-                    return Err("系统通知被拒绝".into());
-                }
-                self.calls
-                    .lock()
-                    .unwrap()
-                    .push((title.into(), body.into()));
-                Ok(())
-            }
-        }
-        struct NoopSink;
-        impl crate::monitor::engine::StatusSink for NoopSink {
-            fn emit(&self, _event: crate::model::StatusEvent) {}
-        }
-
-        fn ctx_with(
-            dir: &std::path::Path,
-            notifier: Arc<RecordingNotifier>,
-        ) -> Arc<CollectCtx> {
-            let config = Arc::new(
-                ConfigStore::load_from(dir.join("config.json")).unwrap(),
-            );
-            let db = Arc::new(crate::store::Database::open(&dir.join("monitor.db")).unwrap());
-            Arc::new(CollectCtx {
-                config,
-                db,
-                provider: crate::provider::default_provider(),
-                sink: Arc::new(NoopSink),
-                http: reqwest::Client::new(),
-                notifier,
-            })
-        }
-
         let event = PendingEvent {
             event_id: 1,
             product_id: 1,
@@ -685,6 +840,57 @@ mod tests {
             assert_eq!(status, "failed");
             assert!(error.as_deref().unwrap().contains("系统通知被拒绝"));
             assert!(fail_notifier.calls.lock().unwrap().is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn send_test_local_and_windows() {
+        // local 通道无出站动作，直接返回 local
+        {
+            let dir = tempfile::tempdir().unwrap();
+            let notifier = Arc::new(RecordingNotifier {
+                calls: std::sync::Mutex::new(Vec::new()),
+                fail: false,
+            });
+            let ctx = ctx_with(dir.path(), notifier.clone());
+            let cfg = ctx.config.read();
+            let (status, error) = send_test(&ctx, &cfg, Channel::Local).await;
+            assert_eq!(status, "local");
+            assert!(error.is_none());
+            assert!(notifier.calls.lock().unwrap().is_empty());
+        }
+
+        // windows 通道走真实 Notifier 出口，正文为测试文案
+        {
+            let dir = tempfile::tempdir().unwrap();
+            let notifier = Arc::new(RecordingNotifier {
+                calls: std::sync::Mutex::new(Vec::new()),
+                fail: false,
+            });
+            let ctx = ctx_with(dir.path(), notifier.clone());
+            let cfg = ctx.config.read();
+            let (status, error) = send_test(&ctx, &cfg, Channel::Windows).await;
+            assert_eq!(status, "sent");
+            assert!(error.is_none());
+            let calls = notifier.calls.lock().unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].0, "VPS Monitor");
+            assert!(calls[0].1.contains("测试通知"));
+        }
+
+        // 未配置 token 时 telegram 测试返回 failed 并带原因
+        {
+            let dir = tempfile::tempdir().unwrap();
+            let notifier = Arc::new(RecordingNotifier {
+                calls: std::sync::Mutex::new(Vec::new()),
+                fail: false,
+            });
+            let ctx = ctx_with(dir.path(), notifier);
+            let cfg = ctx.config.read();
+            let (status, error) = send_test(&ctx, &cfg, Channel::Telegram).await;
+            assert_eq!(status, "failed");
+            // 测试环境 keyring 无 token（token_exists 失败按未配置处理）
+            assert!(error.is_some());
         }
     }
 }

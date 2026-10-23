@@ -8,6 +8,7 @@ import type {
   EventView,
   HistoryView,
   LegacyImportReport,
+  NotifyTestResult,
   PollView,
   ProductPage,
   ProductQuery,
@@ -106,6 +107,9 @@ export const ruleDelete = (id: number) => unwrap(invoke<void>("rule_delete", { i
 
 export const collectManual = (force: boolean) =>
   unwrap(invoke<CollectResult>("collect_manual", { force }));
+
+export const notifyTest = (channel: string) =>
+  unwrap(invoke<NotifyTestResult>("notify_test", { channel }));
 
 export const configGet = () => unwrap(invoke<ConfigView>("config_get"));
 
