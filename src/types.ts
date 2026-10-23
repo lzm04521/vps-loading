@@ -16,7 +16,7 @@ export const ALL_EVENT_TYPES: EventType[] = [
   "new_product",
 ];
 
-export type Channel = "local" | "telegram" | "webhook" | "windows";
+export type Channel = "local" | "telegram" | "webhook" | "windows" | "ntfy";
 
 export interface AppSettings {
   autoStart: boolean;
@@ -69,6 +69,7 @@ export interface ProductQuery {
   limit: number;
   offset: number;
 }
+
 
 export interface ProductView {
   id: number;
@@ -133,6 +134,8 @@ export interface EventView {
   currentPrice: string;
   currentPriceUsd: number | null;
   buyUrl: string;
+  /** 产品当前评测地址（后端 JOIN 当前值，语义与 buyUrl 一致） */
+  blogUrl: string;
   regionCn: string;
   vendorName: string;
   unit: string;
@@ -200,6 +203,7 @@ export interface SummaryView {
   pollIntervalSeconds: number;
   telegramConfigured: boolean;
   webhookConfigured: boolean;
+  ntfyConfigured: boolean;
   dbPath: string;
 }
 
@@ -226,6 +230,9 @@ export interface ConfigView {
   telegramChatId: string;
   telegramTokenSet: boolean;
   webhookUrl: string;
+  ntfyServerUrl: string;
+  ntfyTopic: string;
+  ntfyTokenSet: boolean;
   settings: AppSettings;
   configPath: string;
   dbPath: string;
@@ -238,6 +245,10 @@ export interface ConfigInput {
   /** Some("") 表示清除；undefined 表示不改 */
   telegramToken?: string;
   webhookUrl?: string;
+  ntfyServerUrl?: string;
+  ntfyTopic?: string;
+  /** Some("") 表示清除；undefined 表示不改 */
+  ntfyToken?: string;
   settings?: AppSettings;
 }
 

@@ -82,6 +82,11 @@ export const sourceHistoryList = (limit: number) =>
 export const alertsList = (limit: number) =>
   unwrap(invoke<AlertView[]>("alerts_list", { limit }));
 
+export const alertDelete = (id: number) =>
+  unwrap(invoke<void>("alert_delete", { id }));
+
+export const alertsClear = () => unwrap(invoke<number>("alerts_clear"));
+
 export const pollsList = (limit: number) =>
   unwrap(invoke<PollView[]>("polls_list", { limit }));
 

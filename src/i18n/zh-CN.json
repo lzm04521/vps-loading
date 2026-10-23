@@ -46,7 +46,8 @@
     "local": "本地（看板）",
     "telegram": "Telegram",
     "webhook": "Webhook",
-    "windows": "Windows 通知"
+    "windows": "Windows 通知",
+    "ntfy": "ntfy 推送"
   },
   "dashboard": {
     "stats": {
@@ -79,7 +80,9 @@
       "telegramReady": "Telegram 已配置",
       "telegramNotReady": "Telegram 未配置",
       "webhookReady": "Webhook 已配置",
-      "webhookNotReady": "Webhook 未配置"
+      "webhookNotReady": "Webhook 未配置",
+      "ntfyReady": "ntfy 已配置",
+      "ntfyNotReady": "ntfy 未配置"
     }
   },
   "products": {
@@ -111,6 +114,7 @@
     "promo": "优惠码",
     "route": "线路",
     "buy": "购买",
+    "review": "评测",
     "noResults": "没有符合条件的套餐"
   },
   "restock": {
@@ -127,7 +131,11 @@
     "channel": "通道",
     "statusSent": "已发送",
     "statusLocal": "本地",
-    "statusFailed": "失败"
+    "statusFailed": "失败",
+    "deleteConfirm": "确定删除该条告警记录？",
+    "clear": "清空",
+    "clearConfirm": "确定清空全部告警记录？",
+    "cleared": "已清空 {{count}} 条"
   },
   "rules": {
     "title": "告警规则",
@@ -178,6 +186,12 @@
   },
   "settings": {
     "title": "设置",
+    "sections": {
+      "collect": "采集",
+      "notify": "通知",
+      "app": "应用",
+      "data": "数据管理"
+    },
     "collect": {
       "title": "采集",
       "sourceUrl": "数据源地址",
@@ -192,7 +206,10 @@
       "tokenUnset": "未配置",
       "tokenPlaceholder": "留空表示不修改；输入新值覆盖",
       "webhook": "Webhook",
-      "webhookUrl": "Webhook URL"
+      "webhookUrl": "Webhook URL",
+      "ntfy": "ntfy",
+      "ntfyServerUrl": "服务地址",
+      "ntfyTopic": "Topic"
     },
     "app": {
       "title": "应用",
@@ -250,6 +267,7 @@
     "LEGACY_READ_FAILED": "读取旧配置失败：{{detail}}",
     "LEGACY_CONFIG_CORRUPT": "旧配置文件损坏：{{detail}}",
     "LEGACY_DB_CONFLICT": "{{detail}}",
-    "LEGACY_DB_IMPORT_FAILED": "导入旧数据库失败：{{detail}}"
+    "LEGACY_DB_IMPORT_FAILED": "导入旧数据库失败：{{detail}}",
+    "ALERT_NOT_FOUND": "告警记录不存在"
   }
 }

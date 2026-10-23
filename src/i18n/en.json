@@ -46,7 +46,8 @@
     "local": "Local (dashboard)",
     "telegram": "Telegram",
     "webhook": "Webhook",
-    "windows": "Windows notification"
+    "windows": "Windows notification",
+    "ntfy": "ntfy push"
   },
   "dashboard": {
     "stats": {
@@ -79,7 +80,9 @@
       "telegramReady": "Telegram configured",
       "telegramNotReady": "Telegram not configured",
       "webhookReady": "Webhook configured",
-      "webhookNotReady": "Webhook not configured"
+      "webhookNotReady": "Webhook not configured",
+      "ntfyReady": "ntfy configured",
+      "ntfyNotReady": "ntfy not configured"
     }
   },
   "products": {
@@ -111,6 +114,7 @@
     "promo": "Promo",
     "route": "Route",
     "buy": "Buy",
+    "review": "Review",
     "noResults": "No matching plans"
   },
   "restock": {
@@ -127,7 +131,11 @@
     "channel": "Channel",
     "statusSent": "Sent",
     "statusLocal": "Local",
-    "statusFailed": "Failed"
+    "statusFailed": "Failed",
+    "deleteConfirm": "Delete this alert record?",
+    "clear": "Clear all",
+    "clearConfirm": "Clear all alert records?",
+    "cleared": "Cleared {{count}} records"
   },
   "rules": {
     "title": "Alert rules",
@@ -178,6 +186,12 @@
   },
   "settings": {
     "title": "Settings",
+    "sections": {
+      "collect": "Collector",
+      "notify": "Notifications",
+      "app": "Application",
+      "data": "Data"
+    },
     "collect": {
       "title": "Collector",
       "sourceUrl": "Source URL",
@@ -192,7 +206,10 @@
       "tokenUnset": "Not configured",
       "tokenPlaceholder": "Leave empty to keep; type to overwrite",
       "webhook": "Webhook",
-      "webhookUrl": "Webhook URL"
+      "webhookUrl": "Webhook URL",
+      "ntfy": "ntfy",
+      "ntfyServerUrl": "Server URL",
+      "ntfyTopic": "Topic"
     },
     "app": {
       "title": "Application",
@@ -250,6 +267,7 @@
     "LEGACY_READ_FAILED": "Failed to read legacy config: {{detail}}",
     "LEGACY_CONFIG_CORRUPT": "Legacy config is corrupted: {{detail}}",
     "LEGACY_DB_CONFLICT": "{{detail}}",
-    "LEGACY_DB_IMPORT_FAILED": "Failed to import legacy database: {{detail}}"
+    "LEGACY_DB_IMPORT_FAILED": "Failed to import legacy database: {{detail}}",
+    "ALERT_NOT_FOUND": "Alert record not found"
   }
 }
