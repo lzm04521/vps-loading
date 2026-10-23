@@ -313,6 +313,8 @@ pub struct EventView {
     pub current_price: String,
     pub current_price_usd: Option<f64>,
     pub buy_url: String,
+    /// 产品当前评测地址（事件表不存历史快照，JOIN 取当前值，语义与 buy_url 一致）
+    pub blog_url: String,
     pub region_cn: String,
     pub vendor_name: String,
     pub unit: String,

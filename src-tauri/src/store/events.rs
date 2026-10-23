@@ -45,6 +45,7 @@ impl Database {
                     current_price: row.get(11)?,
                     current_price_usd: row.get(12)?,
                     buy_url: row.get(13)?,
+                    blog_url: row.get(17)?,
                     region_cn: row.get(14)?,
                     vendor_name: row.get(15)?,
                     unit: row.get(16)?,
@@ -54,7 +55,7 @@ impl Database {
                 "SELECT e.id, e.product_id, e.type, e.old_status, e.new_status,
                         e.old_price_usd, e.new_price_usd, e.created_at,
                         p.name, p.vendor_key, p.series_name, p.price, p.price_usd,
-                        p.buy_url, p.region_cn, v.name, p.unit
+                        p.buy_url, p.region_cn, v.name, p.unit, p.blog_url
                  FROM events e
                  JOIN products p ON p.id = e.product_id
                  JOIN vendors v ON v.key = p.vendor_key
@@ -86,10 +87,12 @@ mod tests {
     fn insert_and_list() {
         let db = test_db();
         let at = utcnow_iso();
+        let mut draft = test_util::sample_product_draft();
+        draft.blog_url = "https://example.com/review".into();
         db.with_tx(|tx| {
             catalog::upsert_vendor(tx, "vultr", "Vultr", "")?;
             catalog::upsert_series(tx, "vultr", "默认", "默认", "东京")?;
-            let pid = catalog::insert_product(tx, &test_util::sample_product_draft(), &at)?;
+            let pid = catalog::insert_product(tx, &draft, &at)?;
             insert(
                 tx,
                 &EventDraft {
@@ -125,5 +128,6 @@ mod tests {
         assert_eq!(filtered[0].event_type, "restock");
         assert_eq!(filtered[0].new_price_usd, Some(5.5));
         assert_eq!(filtered[0].unit, "月");
+        assert_eq!(filtered[0].blog_url, "https://example.com/review");
     }
 }
