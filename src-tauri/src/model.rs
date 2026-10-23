@@ -49,14 +49,16 @@ pub enum Channel {
     Telegram,
     Webhook,
     Windows,
+    Ntfy,
 }
 
 impl Channel {
-    pub const ALL: [Channel; 4] = [
+    pub const ALL: [Channel; 5] = [
         Channel::Local,
         Channel::Telegram,
         Channel::Webhook,
         Channel::Windows,
+        Channel::Ntfy,
     ];
 
     pub fn as_str(&self) -> &'static str {
@@ -65,6 +67,7 @@ impl Channel {
             Channel::Telegram => "telegram",
             Channel::Webhook => "webhook",
             Channel::Windows => "windows",
+            Channel::Ntfy => "ntfy",
         }
     }
 
@@ -90,6 +93,8 @@ pub struct AppConfig {
     /// telegram bot token 不落配置文件，存 Windows 凭据管理器（secrets.rs）
     pub telegram: TelegramConfig,
     pub webhook: WebhookConfig,
+    /// ntfy token 同样不落配置文件；此处只存服务地址与 topic
+    pub ntfy: NtfyConfig,
     pub settings: AppSettings,
 }
 
@@ -101,6 +106,7 @@ impl Default for AppConfig {
             request: RequestConfig::default(),
             telegram: TelegramConfig::default(),
             webhook: WebhookConfig::default(),
+            ntfy: NtfyConfig::default(),
             settings: AppSettings::default(),
         }
     }
@@ -132,6 +138,13 @@ pub struct TelegramConfig {
 #[serde(rename_all = "camelCase", default)]
 pub struct WebhookConfig {
     pub url: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct NtfyConfig {
+    pub server_url: String,
+    pub topic: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -377,6 +390,7 @@ pub struct SummaryView {
     pub poll_interval_seconds: u64,
     pub telegram_configured: bool,
     pub webhook_configured: bool,
+    pub ntfy_configured: bool,
     pub db_path: String,
 }
 
@@ -408,12 +422,15 @@ pub struct ConfigView {
     pub telegram_chat_id: String,
     pub telegram_token_set: bool,
     pub webhook_url: String,
+    pub ntfy_server_url: String,
+    pub ntfy_topic: String,
+    pub ntfy_token_set: bool,
     pub settings: AppSettings,
     pub config_path: String,
     pub db_path: String,
 }
 
-/// 配置更新入参：字段为 None 表示不改。telegramToken 为 Some("") 表示清除。
+/// 配置更新入参：字段为 None 表示不改。telegramToken / ntfyToken 为 Some("") 表示清除。
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ConfigInput {
@@ -422,6 +439,9 @@ pub struct ConfigInput {
     pub telegram_chat_id: Option<String>,
     pub telegram_token: Option<String>,
     pub webhook_url: Option<String>,
+    pub ntfy_server_url: Option<String>,
+    pub ntfy_topic: Option<String>,
+    pub ntfy_token: Option<String>,
     pub settings: Option<AppSettings>,
 }
 
@@ -464,6 +484,7 @@ mod tests {
         for c in Channel::ALL {
             assert_eq!(Channel::parse(c.as_str()), Some(c));
         }
+        assert_eq!(Channel::parse("ntfy"), Some(Channel::Ntfy));
     }
 
     #[test]
@@ -472,6 +493,8 @@ mod tests {
         assert_eq!(cfg.source_url, "https://kyoa.de/data.js");
         assert_eq!(cfg.poll_interval_seconds, 180);
         assert!(cfg.settings.auto_start);
+        assert!(cfg.ntfy.server_url.is_empty());
+        assert!(cfg.ntfy.topic.is_empty());
         // 旧配置缺 settings.log_level 键也能加载
         let legacy: AppConfig =
             serde_json::from_str(r#"{"sourceUrl":"https://x/data.js","settings":{"language":"en"}}"#)
@@ -479,5 +502,7 @@ mod tests {
         assert_eq!(legacy.source_url, "https://x/data.js");
         assert_eq!(legacy.settings.language, "en");
         assert_eq!(legacy.settings.log_level, "info");
+        assert!(legacy.ntfy.server_url.is_empty());
+        assert!(legacy.ntfy.topic.is_empty());
     }
 }

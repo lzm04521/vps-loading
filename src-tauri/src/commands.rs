@@ -15,7 +15,7 @@ use crate::model::{
 use crate::monitor::alerts;
 use crate::monitor::engine::StatusSink;
 use crate::monitor::service::MonitorService;
-use crate::secrets::{self, TELEGRAM_TOKEN_REF};
+use crate::secrets::{self, NTFY_TOKEN_REF, TELEGRAM_TOKEN_REF};
 use crate::store::Database;
 
 pub struct AppState {
@@ -85,6 +85,7 @@ pub fn summary_get(state: State<'_, AppState>) -> Result<SummaryView, String> {
         poll_interval_seconds: state.service.interval_seconds(),
         telegram_configured: alerts::telegram_ready(&state.config),
         webhook_configured: !cfg.webhook.url.trim().is_empty(),
+        ntfy_configured: alerts::ntfy_ready(&state.config),
         db_path: state.db.path().display().to_string(),
     })
 }
@@ -239,6 +240,9 @@ fn config_view(state: &AppState) -> ConfigView {
         telegram_chat_id: cfg.telegram.chat_id.clone(),
         telegram_token_set: secrets::token_exists(TELEGRAM_TOKEN_REF).unwrap_or(false),
         webhook_url: cfg.webhook.url.clone(),
+        ntfy_server_url: cfg.ntfy.server_url.clone(),
+        ntfy_topic: cfg.ntfy.topic.clone(),
+        ntfy_token_set: secrets::token_exists(NTFY_TOKEN_REF).unwrap_or(false),
         settings: cfg.settings.clone(),
         config_path: state.config.config_path().display().to_string(),
         db_path: state.db.path().display().to_string(),
@@ -266,6 +270,15 @@ pub fn config_update(
                 .map_err(|e| ipc_err("SECRET_SAVE_FAILED", e))?;
         }
     }
+    if let Some(token) = &input.ntfy_token {
+        if token.trim().is_empty() {
+            secrets::delete_token(NTFY_TOKEN_REF)
+                .map_err(|e| ipc_err("SECRET_SAVE_FAILED", e))?;
+        } else {
+            secrets::save_token(NTFY_TOKEN_REF, token.trim())
+                .map_err(|e| ipc_err("SECRET_SAVE_FAILED", e))?;
+        }
+    }
 
     // 2. 校验 + 原子落盘
     let interval_from_input = input.poll_interval_seconds;
@@ -287,6 +300,12 @@ pub fn config_update(
             }
             if let Some(url) = &input.webhook_url {
                 c.webhook.url = url.trim().to_string();
+            }
+            if let Some(url) = &input.ntfy_server_url {
+                c.ntfy.server_url = url.trim().to_string();
+            }
+            if let Some(topic) = &input.ntfy_topic {
+                c.ntfy.topic = topic.trim().to_string();
             }
             if let Some(settings) = &input.settings {
                 c.settings = AppSettings {
@@ -459,6 +478,11 @@ mod tests {
         let mut r = input();
         r.event_types = "restock, price_down,price_up".into();
         r.channel = "telegram".into();
+        assert!(validate_rule(&r).is_ok());
+
+        // ntfy 通道合法
+        let mut r = input();
+        r.channel = "ntfy".into();
         assert!(validate_rule(&r).is_ok());
 
         // 各类非法输入

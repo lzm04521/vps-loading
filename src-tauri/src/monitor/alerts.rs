@@ -6,7 +6,7 @@ use std::time::Duration;
 use crate::config::ConfigStore;
 use crate::model::{AppConfig, Channel, EventType, Rule};
 use crate::monitor::engine::{CollectCtx, PendingEvent};
-use crate::secrets::{self, TELEGRAM_TOKEN_REF};
+use crate::secrets::{self, NTFY_TOKEN_REF, TELEGRAM_TOKEN_REF};
 use crate::store::catalog::ProductFull;
 
 fn non_empty(s: &Option<String>) -> Option<&str> {
@@ -253,6 +253,8 @@ async fn dispatch(
         Channel::Telegram => send_telegram(ctx, cfg, message).await,
         Channel::Webhook => send_webhook(ctx, cfg, message, event, product).await,
         Channel::Windows => send_windows(ctx, message).await,
+        // 占位：send_ntfy 在后续任务落地，先以明确失败态兜底
+        Channel::Ntfy => ("failed".into(), Some("ntfy 通道尚未实现".into())),
     }
 }
 
@@ -339,6 +341,15 @@ pub fn telegram_ready(config: &ConfigStore) -> bool {
         return false;
     }
     secrets::token_exists(TELEGRAM_TOKEN_REF).unwrap_or(false)
+}
+
+/// 供 commands/summary 模块复用：配置层面 ntfy 是否就绪
+pub fn ntfy_ready(config: &ConfigStore) -> bool {
+    let cfg = config.read();
+    if cfg.ntfy.server_url.trim().is_empty() || cfg.ntfy.topic.trim().is_empty() {
+        return false;
+    }
+    secrets::token_exists(NTFY_TOKEN_REF).unwrap_or(false)
 }
 
 #[cfg(test)]

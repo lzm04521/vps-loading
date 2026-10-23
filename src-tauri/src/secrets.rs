@@ -14,6 +14,9 @@ pub const KEYRING_SERVICE: &str = "vpsmonitor";
 /// telegram bot token 的 keyring 条目引用（account 名）
 pub const TELEGRAM_TOKEN_REF: &str = "vpsmonitor:telegram-bot-token";
 
+/// ntfy 专用 token 的 keyring 条目引用（每个接入方独立 token，不复用）
+pub const NTFY_TOKEN_REF: &str = "vpsmonitor:ntfy-token";
+
 pub fn save_token(token_ref: &str, token: &str) -> Result<(), SecretsError> {
     let entry = keyring::Entry::new(KEYRING_SERVICE, token_ref).map_err(keyring_err)?;
     entry.set_password(token).map_err(keyring_err)
