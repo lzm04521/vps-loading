@@ -147,6 +147,19 @@ pub fn alerts_list(state: State<'_, AppState>, limit: Option<i64>) -> Result<Vec
 }
 
 #[tauri::command]
+pub fn alert_delete(state: State<'_, AppState>, id: i64) -> Result<(), String> {
+    if !state.db.delete_alert(id).map_err(db_err)? {
+        return Err(ipc_err("ALERT_NOT_FOUND", "告警记录不存在"));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn alerts_clear(state: State<'_, AppState>) -> Result<usize, String> {
+    state.db.clear_alerts().map_err(db_err)
+}
+
+#[tauri::command]
 pub fn polls_list(state: State<'_, AppState>, limit: Option<i64>) -> Result<Vec<PollView>, String> {
     state.db.list_polls(limit.unwrap_or(50)).map_err(db_err)
 }

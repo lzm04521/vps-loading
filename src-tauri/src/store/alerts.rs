@@ -44,6 +44,19 @@ impl Database {
             .unwrap_or(false)
     }
 
+    /// 删除单条告警记录；返回是否命中
+    pub fn delete_alert(&self, id: i64) -> rusqlite::Result<bool> {
+        self.with_conn(|c| {
+            let removed = c.execute("DELETE FROM alerts WHERE id = ?", params![id])?;
+            Ok(removed > 0)
+        })
+    }
+
+    /// 清空全部告警记录，返回删除条数
+    pub fn clear_alerts(&self) -> rusqlite::Result<usize> {
+        self.with_conn(|c| c.execute("DELETE FROM alerts", []))
+    }
+
     pub fn list_alerts(&self, limit: i64) -> rusqlite::Result<Vec<AlertView>> {
         let limit = limit.clamp(1, 500);
         self.with_conn(|c| {
@@ -154,5 +167,57 @@ mod tests {
         assert_eq!(alerts[0].channel, "local");
         assert_eq!(alerts[0].status, "local");
         assert_eq!(alerts[0].rule_name.as_deref(), Some("全部补货提醒（本地）"));
+    }
+
+    #[test]
+    fn delete_and_clear() {
+        let db = test_db();
+        let rule = db.list_rules(false).unwrap().remove(0);
+        let (pid, event_id) = db
+            .with_tx(|tx| {
+                catalog::upsert_vendor(tx, "vultr", "Vultr", "")?;
+                catalog::upsert_series(tx, "vultr", "默认", "默认", "东京")?;
+                let pid = catalog::insert_product(tx, &test_util::sample_product_draft(), "2026-01-01T00:00:00+00:00")?;
+                let eid = events::insert(
+                    tx,
+                    &crate::monitor::diff::EventDraft {
+                        product_id: pid,
+                        event_type: EventType::Restock,
+                        old_status: Some(0),
+                        new_status: Some(1),
+                        old_price_usd: None,
+                        new_price_usd: None,
+                    },
+                    "2026-01-01T00:00:00+00:00",
+                )?;
+                Ok((pid, eid))
+            })
+            .unwrap();
+
+        for status in ["local", "sent"] {
+            db.insert_alert(&AlertRecord {
+                event_id,
+                rule_id: rule.id,
+                product_id: pid,
+                channel: "local",
+                message: "消息",
+                status,
+                error: None,
+            })
+            .unwrap();
+        }
+        let alerts = db.list_alerts(50).unwrap();
+        assert_eq!(alerts.len(), 2);
+        let first_id = alerts[0].id;
+
+        // 单条删除；不存在的 id 返回 false
+        assert!(db.delete_alert(first_id).unwrap());
+        assert_eq!(db.list_alerts(50).unwrap().len(), 1);
+        assert!(!db.delete_alert(999_999).unwrap());
+
+        // 清空返回删除条数；空表再清空返回 0 不报错
+        assert_eq!(db.clear_alerts().unwrap(), 1);
+        assert!(db.list_alerts(50).unwrap().is_empty());
+        assert_eq!(db.clear_alerts().unwrap(), 0);
     }
 }

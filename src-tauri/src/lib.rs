@@ -135,6 +135,8 @@ pub fn run() {
             commands::events_list,
             commands::source_history_list,
             commands::alerts_list,
+            commands::alert_delete,
+            commands::alerts_clear,
             commands::polls_list,
             commands::rules_list,
             commands::rule_create,
