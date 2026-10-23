@@ -19,7 +19,7 @@ export default function Products() {
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
-  const [vendor, setVendor] = useState<string | undefined>();
+  const [vendor, setVendor] = useState<string[]>([]);
   const [region, setRegion] = useState<string | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [watchOnly, setWatchOnly] = useState(false);
@@ -32,7 +32,7 @@ export default function Products() {
     try {
       const result = await productsList({
         status,
-        vendor: vendor ?? null,
+        vendors: vendor.length ? vendor : null,
         region: region ?? null,
         q: q.trim() || null,
         minPrice: null,
@@ -82,7 +82,9 @@ export default function Products() {
             }}
           />
           <Select
-            style={{ width: 160 }}
+            mode="multiple"
+            maxTagCount="responsive"
+            style={{ minWidth: 200, maxWidth: 320 }}
             placeholder={t("products.vendor")}
             allowClear
             value={vendor}
@@ -90,13 +92,10 @@ export default function Products() {
               setVendor(v);
               resetPage();
             }}
-            options={[
-              { value: "", label: t("products.allVendors") },
-              ...vendors.map((v) => ({
-                value: v.key,
-                label: `${v.name} (${v.ok}/${v.total})`,
-              })),
-            ]}
+            options={vendors.map((v) => ({
+              value: v.key,
+              label: `${v.name} (${v.ok}/${v.total})`,
+            }))}
           />
           <Select
             style={{ width: 150 }}

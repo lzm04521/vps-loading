@@ -211,7 +211,8 @@ pub struct RuleInput {
 #[serde(rename_all = "camelCase", default)]
 pub struct ProductQuery {
     pub status: String,
-    pub vendor: Option<String>,
+    /// 供应商多选；None 或空数组 = 不过滤
+    pub vendors: Option<Vec<String>>,
     pub region: Option<String>,
     pub q: Option<String>,
     pub min_price: Option<f64>,
@@ -226,7 +227,7 @@ impl Default for ProductQuery {
     fn default() -> Self {
         Self {
             status: "all".into(),
-            vendor: None,
+            vendors: None,
             region: None,
             q: None,
             min_price: None,

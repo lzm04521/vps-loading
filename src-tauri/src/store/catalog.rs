@@ -371,9 +371,21 @@ fn build_where(query: &ProductQuery) -> (String, Vec<Box<dyn rusqlite::ToSql>>) 
         "out" => where_sql.push_str(" AND p.status = 0"),
         _ => {}
     }
-    if let Some(vendor) = query.vendor.as_deref().filter(|s| !s.is_empty()) {
-        where_sql.push_str(" AND p.vendor_key = ?");
-        params.push(Box::new(vendor.to_string()));
+    // 供应商多选：过滤空串后非空列表拼 IN；None / 空列表 = 不过滤
+    let vendors: Vec<String> = query
+        .vendors
+        .as_deref()
+        .unwrap_or_default()
+        .iter()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .collect();
+    if !vendors.is_empty() {
+        let placeholders = vec!["?"; vendors.len()].join(", ");
+        where_sql.push_str(&format!(" AND p.vendor_key IN ({placeholders})"));
+        for v in vendors {
+            params.push(Box::new(v));
+        }
     }
     if let Some(region) = query.region.as_deref().filter(|s| !s.is_empty()) {
         where_sql.push_str(" AND p.region_cn = ?");
@@ -461,17 +473,25 @@ mod tests {
         let mut d2 = test_util::sample_product_draft();
         d2.name = "东京 2C2G".into();
         d2.status = 0;
+        // 第二个商家，验证供应商多选过滤
+        let mut d3 = test_util::sample_product_draft();
+        d3.vendor_key = "bwg".into();
+        d3.name = "东京 1C1G BWG".into();
+        d3.status = 0;
 
         db.with_tx(|tx| {
             upsert_vendor(tx, "vultr", "Vultr", "")?;
+            upsert_vendor(tx, "bwg", "BandwagonHost", "")?;
             upsert_series(tx, "vultr", "默认", "默认", "东京")?;
+            upsert_series(tx, "bwg", "默认", "默认", "东京")?;
             insert_product(tx, &d1, "2026-01-01T00:00:00+00:00")?;
             insert_product(tx, &d2, "2026-01-01T00:00:00+00:00")?;
+            insert_product(tx, &d3, "2026-01-01T00:00:00+00:00")?;
             Ok(())
         })
         .unwrap();
 
-        assert_eq!(db.product_count().unwrap(), 2);
+        assert_eq!(db.product_count().unwrap(), 3);
 
         let page = db
             .query_products(&ProductQuery {
@@ -482,16 +502,31 @@ mod tests {
         assert_eq!(page.total, 1);
         assert_eq!(page.items[0].name, "东京 1C1G");
 
+        // 供应商多选：单选一家 / 多选两家 / 空数组（=不过滤）/ 不传
+        let by_vendors = |vendors: Option<Vec<&str>>| {
+            db.query_products(&ProductQuery {
+                vendors: vendors.map(|v| v.into_iter().map(String::from).collect()),
+                ..Default::default()
+            })
+            .unwrap()
+            .total
+        };
+        assert_eq!(by_vendors(Some(vec!["vultr"])), 2);
+        assert_eq!(by_vendors(Some(vec!["vultr", "bwg"])), 3);
+        assert_eq!(by_vendors(Some(vec![])), 3);
+        assert_eq!(by_vendors(None), 3);
+
         let counts = db.counts().unwrap();
-        assert_eq!((counts.total, counts.ok, counts.oos), (2, 1, 1));
+        assert_eq!((counts.total, counts.ok, counts.oos), (3, 1, 2));
 
         let vendors = db.list_vendors().unwrap();
-        assert_eq!(vendors.len(), 1);
+        assert_eq!(vendors.len(), 2);
         assert_eq!(vendors[0].total, 2);
 
         let regions = db.list_regions().unwrap();
         assert_eq!(regions.len(), 1);
         assert_eq!(regions[0].region_cn, "日本东京");
+        assert_eq!(regions[0].total, 3);
     }
 
     #[test]

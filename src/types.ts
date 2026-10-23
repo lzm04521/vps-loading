@@ -59,7 +59,8 @@ export interface RuleInput {
 
 export interface ProductQuery {
   status: string;
-  vendor: string | null;
+  /** 供应商多选；null 或空数组 = 不过滤 */
+  vendors: string[] | null;
   region: string | null;
   q: string | null;
   minPrice: number | null;
