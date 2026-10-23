@@ -164,6 +164,11 @@ export default function Dashboard() {
                   ? t("dashboard.channels.webhookReady")
                   : t("dashboard.channels.webhookNotReady")}
               </Tag>
+              <Tag color={summary?.ntfyConfigured ? "green" : "default"}>
+                {summary?.ntfyConfigured
+                  ? t("dashboard.channels.ntfyReady")
+                  : t("dashboard.channels.ntfyNotReady")}
+              </Tag>
             </Space>
           </Descriptions.Item>
           {summary?.lastError ? (
