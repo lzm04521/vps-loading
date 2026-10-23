@@ -240,6 +240,84 @@ async fn send_windows(ctx: &CollectCtx, message: &str) -> (String, Option<String
     }
 }
 
+/// ntfy 发布请求目标：URL 与自定义 header。Title 仅允许 ASCII，中文一律进 body。
+pub(crate) struct NtfyTarget {
+    pub url: String,
+    pub headers: Vec<(&'static str, String)>,
+}
+
+/// 事件类型 → (Priority, Tags emoji 短名)
+fn ntfy_priority_and_tags(event_type: EventType) -> (&'static str, &'static str) {
+    match event_type {
+        EventType::Restock => ("high", "rotating_light"),
+        EventType::Soldout => ("default", "warning"),
+        EventType::PriceDown => ("high", "money_with_wings"),
+        EventType::PriceUp => ("default", "chart_with_upwards_trend"),
+        EventType::NewProduct => ("default", "sparkles"),
+    }
+}
+
+/// 构造 ntfy 发布请求（POST {server}/{topic}，仅 Bearer 鉴权可用）；
+/// 服务地址或 topic 未配置返回 None。
+pub(crate) fn ntfy_request(
+    event_type: EventType,
+    cfg: &AppConfig,
+    token: &str,
+) -> Option<NtfyTarget> {
+    let server = cfg.ntfy.server_url.trim().trim_end_matches('/');
+    let topic = cfg.ntfy.topic.trim();
+    if server.is_empty() || topic.is_empty() {
+        return None;
+    }
+    let (priority, tags) = ntfy_priority_and_tags(event_type);
+    Some(NtfyTarget {
+        url: format!("{server}/{topic}"),
+        headers: vec![
+            ("Authorization", format!("Bearer {token}")),
+            ("Title", "VPS Monitor".into()),
+            ("Priority", priority.into()),
+            ("Tags", tags.into()),
+        ],
+    })
+}
+
+async fn send_ntfy(
+    ctx: &CollectCtx,
+    cfg: &AppConfig,
+    message: &str,
+    event_type: EventType,
+) -> (String, Option<String>) {
+    let token = secrets::load_token(NTFY_TOKEN_REF)
+        .ok()
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty());
+    let Some(token) = token else {
+        return ("failed".into(), Some("ntfy 未配置 token".into()));
+    };
+    let Some(target) = ntfy_request(event_type, cfg, &token) else {
+        return ("failed".into(), Some("ntfy 未配置服务地址或 Topic".into()));
+    };
+
+    let mut req = ctx.http.post(&target.url).body(message.to_string());
+    for (name, value) in &target.headers {
+        req = req.header(*name, value);
+    }
+    let resp = match req.timeout(Duration::from_secs(15)).send().await {
+        Ok(r) => r,
+        Err(e) => return ("failed".into(), Some(mask_secrets(&format!("{e}"), &[&token]))),
+    };
+    let status = resp.status().as_u16();
+    let body = resp.text().await.unwrap_or_default();
+    if status == 200 {
+        return ("sent".into(), None);
+    }
+    let snippet: String = body.chars().take(200).collect();
+    (
+        "failed".into(),
+        Some(mask_secrets(&format!("HTTP {status}: {snippet}"), &[&token])),
+    )
+}
+
 async fn dispatch(
     ctx: &CollectCtx,
     cfg: &AppConfig,
@@ -253,8 +331,7 @@ async fn dispatch(
         Channel::Telegram => send_telegram(ctx, cfg, message).await,
         Channel::Webhook => send_webhook(ctx, cfg, message, event, product).await,
         Channel::Windows => send_windows(ctx, message).await,
-        // 占位：send_ntfy 在后续任务落地，先以明确失败态兜底
-        Channel::Ntfy => ("failed".into(), Some("ntfy 通道尚未实现".into())),
+        Channel::Ntfy => send_ntfy(ctx, cfg, message, event.event_type).await,
     }
 }
 
@@ -463,6 +540,57 @@ mod tests {
         assert!(msg.contains("线路：软银 CN2"));
         assert!(msg.contains("优惠码：NEW10"));
         assert!(msg.contains("购买：https://example.com/buy"));
+    }
+
+    #[test]
+    fn ntfy_request_joins_topic_without_double_slash() {
+        let mut cfg = AppConfig::default();
+        cfg.ntfy.server_url = "https://ntfy.example.com/".into();
+        cfg.ntfy.topic = "vps-loading".into();
+        let t = ntfy_request(EventType::Restock, &cfg, "tk_test").unwrap();
+        assert_eq!(t.url, "https://ntfy.example.com/vps-loading");
+
+        // 不带尾斜杠同样拼成单斜杠
+        cfg.ntfy.server_url = "https://ntfy.example.com".into();
+        let t = ntfy_request(EventType::Restock, &cfg, "tk_test").unwrap();
+        assert_eq!(t.url, "https://ntfy.example.com/vps-loading");
+
+        // 服务地址 / topic 未配置返回 None
+        cfg.ntfy.server_url = String::new();
+        assert!(ntfy_request(EventType::Restock, &cfg, "tk_test").is_none());
+        cfg.ntfy.server_url = "https://ntfy.example.com".into();
+        cfg.ntfy.topic = String::new();
+        assert!(ntfy_request(EventType::Restock, &cfg, "tk_test").is_none());
+    }
+
+    #[test]
+    fn ntfy_request_headers_use_ascii_title_and_event_mapping() {
+        let mut cfg = AppConfig::default();
+        cfg.ntfy.server_url = "https://ntfy.example.com".into();
+        cfg.ntfy.topic = "vps-loading".into();
+
+        let header = |t: &NtfyTarget, name: &str| -> String {
+            t.headers
+                .iter()
+                .find(|(k, _)| *k == name)
+                .map(|(_, v)| v.clone())
+                .unwrap()
+        };
+
+        let cases = [
+            (EventType::Restock, "high", "rotating_light"),
+            (EventType::Soldout, "default", "warning"),
+            (EventType::PriceDown, "high", "money_with_wings"),
+            (EventType::PriceUp, "default", "chart_with_upwards_trend"),
+            (EventType::NewProduct, "default", "sparkles"),
+        ];
+        for (event_type, priority, tags) in cases {
+            let t = ntfy_request(event_type, &cfg, "tk_test").unwrap();
+            assert_eq!(header(&t, "Authorization"), "Bearer tk_test");
+            assert_eq!(header(&t, "Title"), "VPS Monitor");
+            assert_eq!(header(&t, "Priority"), priority);
+            assert_eq!(header(&t, "Tags"), tags);
+        }
     }
 
     #[test]
