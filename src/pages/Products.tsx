@@ -6,7 +6,8 @@ import { productsList, regionsList, vendorsList } from "../api/ipc";
 import { ipcErrorMessage } from "../i18n/errors";
 import { ProductCard } from "../components/ProductCard";
 
-const PAGE_SIZE = 24;
+const DEFAULT_PAGE_SIZE = 24;
+const PAGE_SIZE_OPTIONS = [24, 48, 96, 200, 500, 1000];
 
 export default function Products() {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export default function Products() {
   const [watchOnly, setWatchOnly] = useState(false);
   const [sort, setSort] = useState("default");
   const [current, setCurrent] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -37,8 +39,8 @@ export default function Products() {
         maxPrice,
         watch: watchOnly,
         sort,
-        limit: PAGE_SIZE,
-        offset: (current - 1) * PAGE_SIZE,
+        limit: pageSize,
+        offset: (current - 1) * pageSize,
       });
       setPage(result);
     } catch (e) {
@@ -46,7 +48,7 @@ export default function Products() {
     } finally {
       setLoading(false);
     }
-  }, [status, vendor, region, q, maxPrice, watchOnly, sort, current, message, t]);
+  }, [status, vendor, region, q, maxPrice, watchOnly, sort, current, pageSize, message, t]);
 
   useEffect(() => {
     void reload();
@@ -179,10 +181,19 @@ export default function Products() {
 
       <Pagination
         current={current}
-        pageSize={PAGE_SIZE}
+        pageSize={pageSize}
         total={page.total}
-        showSizeChanger={false}
-        onChange={setCurrent}
+        showSizeChanger
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onChange={(p, sz) => {
+          // 切换每页条数后回到第 1 页，避免高页码 offset 越界
+          if (sz !== pageSize) {
+            setPageSize(sz);
+            setCurrent(1);
+          } else {
+            setCurrent(p);
+          }
+        }}
       />
     </Space>
   );
