@@ -70,6 +70,31 @@ fn text(value: &serde_json::Value) -> String {
     }
 }
 
+/// route 字段专用转换：上游 data.js 部分商品已从字符串改为对象形态
+/// （`{"ct":..,"cu":..,"cm":..}` 三网回程 / `{"single":..}` 单线路）。
+/// 对象拼成与既有字符串风格一致的 `ct+cu+cm` 文本（重复值去重、空值跳过），
+/// 避免 text() 对对象兜底 to_string() 把 JSON 原文当线路显示。
+fn route_text(value: Option<&serde_json::Value>) -> String {
+    match value {
+        None | Some(serde_json::Value::Null) => String::new(),
+        Some(serde_json::Value::String(s)) => s.trim().to_string(),
+        Some(serde_json::Value::Object(map)) => {
+            if let Some(single) = map.get("single") {
+                return text(single).trim().to_string();
+            }
+            let mut parts: Vec<String> = Vec::new();
+            for key in ["ct", "cu", "cm"] {
+                let part = map.get(key).map(text).unwrap_or_default().trim().to_string();
+                if !part.is_empty() && !parts.contains(&part) {
+                    parts.push(part);
+                }
+            }
+            parts.join("+")
+        }
+        Some(other) => other.to_string(),
+    }
+}
+
 fn price_usd(value: &serde_json::Value) -> Option<f64> {
     match value {
         serde_json::Value::Null => None,
@@ -194,7 +219,7 @@ pub fn normalize(data: &serde_json::Value) -> Snapshot {
                     region_flag: text(product.get("region_flag").unwrap_or(&empty)),
                     unit: text(product.get("unit").unwrap_or(&empty)),
                     spec_json: serde_json::to_string(&spec).unwrap_or_else(|_| "{}".into()),
-                    route: text(product.get("route").unwrap_or(&empty)),
+                    route: route_text(product.get("route")),
                     ip_attr: text(product.get("ip_attr").unwrap_or(&empty)),
                     promo: text(product.get("promo").unwrap_or(&empty)),
                     promo_exp: text(product.get("promo_exp").unwrap_or(&empty)),
@@ -301,7 +326,7 @@ pub(crate) mod test_util {
                                     "price_usd": 10.0,
                                     "region": "JP", "region_cn": "日本东京",
                                     "unit": "月", "spec": "not-a-map",
-                                    "route": "", "status": 0
+                                    "route": {"ct": "163", "cu": "4837", "cm": "CMI"}, "status": 0
                                 }
                             ]
                         }
@@ -351,12 +376,40 @@ mod tests {
             .unwrap();
         assert_eq!(p2.status, 0);
         assert_eq!(p2.spec_json, "{}"); // 非 object spec 兜底空对象
+        assert_eq!(p2.route, "163+4837+CMI"); // 对象形态 route 拼成可读文本
 
         // 缺 time 的 history 被忽略；正常条目含 UTC 时间与 sha1 指纹
         assert_eq!(snapshot.history.len(), 1);
         let h = &snapshot.history[0];
         assert_eq!(h.occurred_at.as_deref(), Some("2026-01-02T02:00:00+00:00"));
         assert_eq!(h.fingerprint.len(), 40);
+    }
+
+    #[test]
+    fn route_variants() {
+        // 字符串形态原样透传（trim 首尾空白）
+        assert_eq!(route_text(Some(&serde_json::json!(" 9929+CMIN2 "))), "9929+CMIN2");
+        // 三网对象按 ct+cu+cm 顺序拼接（键序无关）
+        assert_eq!(
+            route_text(Some(&serde_json::json!({"cm": "CMI", "ct": "163", "cu": "4837"}))),
+            "163+4837+CMI"
+        );
+        // 三值相同去重为单值
+        assert_eq!(
+            route_text(Some(&serde_json::json!({"ct": "CN2GIA", "cu": "CN2GIA", "cm": "CN2GIA"}))),
+            "CN2GIA"
+        );
+        // 空值键跳过
+        assert_eq!(
+            route_text(Some(&serde_json::json!({"ct": "", "cu": "4837", "cm": ""}))),
+            "4837"
+        );
+        // single 单线路取其值
+        assert_eq!(route_text(Some(&serde_json::json!({"single": "普通直连"}))), "普通直连");
+        // 空对象 / null / 缺失 → 空串
+        assert_eq!(route_text(Some(&serde_json::json!({}))), "");
+        assert_eq!(route_text(Some(&serde_json::Value::Null)), "");
+        assert_eq!(route_text(None), "");
     }
 
     #[test]
