@@ -31,6 +31,22 @@ fn retryable_status(status: u16) -> bool {
     matches!(status, 429 | 500 | 502 | 503 | 504)
 }
 
+/// 从源 URL 推导 Referer（scheme://host[:port]/）。
+/// kyoa.de 已对 data.js 开启防盗链：缺 Referer 一律 403，故请求需带上；
+/// 镜像/自建源同理从其自身地址推导。
+fn referer_for(url: &str) -> Option<String> {
+    let parsed = reqwest::Url::parse(url).ok()?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return None;
+    }
+    let host = parsed.host_str()?;
+    match parsed.port() {
+        // url crate 对 scheme 默认端口（80/443）返回 None
+        Some(port) => Some(format!("{}://{}:{}/", parsed.scheme(), host, port)),
+        None => Some(format!("{}://{}/", parsed.scheme(), host)),
+    }
+}
+
 #[async_trait]
 impl SourceProvider for KyoaProvider {
     async fn fetch(
@@ -57,6 +73,9 @@ impl SourceProvider for KyoaProvider {
                     },
                 )
                 .header("Accept", "application/javascript, text/javascript, */*;q=0.8");
+            if let Some(referer) = referer_for(url) {
+                builder = builder.header("Referer", referer);
+            }
             if let Some(etag) = etag {
                 builder = builder.header("If-None-Match", etag);
             }
@@ -219,5 +238,24 @@ mod tests {
             parse_payload(r#"window.DATA = {"vendors":[};"#),
             Err(SourceError::Parse(_))
         ));
+    }
+
+    #[test]
+    fn referer_derived_from_source_url() {
+        assert_eq!(
+            referer_for("https://kyoa.de/data.js").as_deref(),
+            Some("https://kyoa.de/")
+        );
+        // 非默认端口保留
+        assert_eq!(
+            referer_for("http://mirror.example:8080/data.js").as_deref(),
+            Some("http://mirror.example:8080/")
+        );
+        // scheme 默认端口规范化掉，不重复拼接
+        assert_eq!(
+            referer_for("https://x.example:443/data.js").as_deref(),
+            Some("https://x.example/")
+        );
+        assert_eq!(referer_for("not a url"), None);
     }
 }
