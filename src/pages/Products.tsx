@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { App, Card, Checkbox, Col, Input, InputNumber, Pagination, Row, Segmented, Select, Space } from "antd";
+import { App, Card, Checkbox, Input, InputNumber, Pagination, Segmented, Select, Space } from "antd";
 import { useTranslation } from "react-i18next";
 import type { ProductPage, RegionStat, VendorStat } from "../types";
 import { productsList, regionsList, vendorsList } from "../api/ipc";
@@ -169,13 +169,19 @@ export default function Products() {
       {page.items.length === 0 && !loading ? (
         <Card size="small">{t("products.noResults")}</Card>
       ) : (
-        <Row gutter={[12, 12]} align="stretch">
+        <div
+          style={{
+            display: "grid",
+            // 按内容区宽度自动排列：每列至少 264px（卡片约 250px），最多 4 列；
+            // 侧栏收放改变内容区宽度，列数自动增减
+            gridTemplateColumns: "repeat(auto-fill, minmax(max(264px, calc(25% - 9px)), 1fr))",
+            gap: 12,
+          }}
+        >
           {page.items.map((p) => (
-            <Col key={p.id} xs={24} sm={12} lg={8} xl={6}>
-              <ProductCard product={p} onWatchChanged={() => void reload()} />
-            </Col>
+            <ProductCard key={p.id} product={p} onWatchChanged={() => void reload()} />
           ))}
-        </Row>
+        </div>
       )}
 
       <Pagination
