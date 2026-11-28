@@ -53,7 +53,8 @@ function renderPage() {
 const lastQueryHas = (query: object) =>
   waitFor(() => expect(productsList).toHaveBeenLastCalledWith(expect.objectContaining(query)));
 
-describe("Products", () => {
+// 页面级测试要渲染整页并多次模拟点击，单条最长约 5 秒；全局上限 20 秒在较慢的机器上余量不足
+describe("Products", { timeout: 60_000 }, () => {
   it("未选商家时不带商家条件", async () => {
     renderPage();
     await screen.findByText("共 60 款");
