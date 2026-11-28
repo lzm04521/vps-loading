@@ -9,7 +9,9 @@ import type { VendorStat } from "../types";
 import { productsList, regionsList, vendorsList } from "../api/ipc";
 import Products from "./Products";
 
-vi.mock("../api/ipc", () => ({
+// 保留真实模块的其余导出（错误提示的格式化要用到 IpcError），只把 IPC 调用函数换成桩
+vi.mock("../api/ipc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/ipc")>()),
   productsList: vi.fn(),
   vendorsList: vi.fn(),
   regionsList: vi.fn(),
@@ -102,5 +104,20 @@ describe("Products", () => {
       container.querySelectorAll(".ant-select-selection-placeholder"),
     ).map((e) => e.textContent);
     expect(placeholders).not.toContain("商家");
+  });
+
+  it("商家列表加载失败时给出提示，主列表照常", async () => {
+    vi.mocked(vendorsList).mockRejectedValue(new Error("商家列表挂了"));
+    renderPage();
+    expect(await screen.findByText("共 60 款")).toBeInTheDocument();
+    // 失败不能悄悄吞掉：用户要看到提示，而不是一个只有「全部」的空侧栏
+    expect(await screen.findByText("商家列表挂了")).toBeInTheDocument();
+  });
+
+  it("地区列表加载失败不影响商家列表", async () => {
+    vi.mocked(regionsList).mockRejectedValue(new Error("地区列表挂了"));
+    renderPage();
+    expect(await screen.findByRole("checkbox", { name: "云悠" })).toBeInTheDocument();
+    expect(await screen.findByText("地区列表挂了")).toBeInTheDocument();
   });
 });

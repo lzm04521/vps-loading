@@ -56,16 +56,17 @@ export default function Products() {
   }, [reload]);
 
   useEffect(() => {
-    void (async () => {
+    // 两份筛选项各自加载：一份失败不影响另一份；失败要提示，不能悄悄当成没有筛选项
+    const load = async <T,>(request: () => Promise<T>, apply: (value: T) => void) => {
       try {
-        const [v, r] = await Promise.all([vendorsList(), regionsList()]);
-        setVendors(v);
-        setRegions(r);
-      } catch {
-        // 筛选项加载失败不阻塞主列表
+        apply(await request());
+      } catch (e) {
+        message.error(ipcErrorMessage(e, t));
       }
-    })();
-  }, []);
+    };
+    void load(vendorsList, setVendors);
+    void load(regionsList, setRegions);
+  }, [message, t]);
 
   const resetPage = () => setCurrent(1);
 
