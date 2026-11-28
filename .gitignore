@@ -32,3 +32,6 @@ assets/
 
 # ZCode 会话目录
 .zcode/
+
+# Superpowers 会话目录（交互稿等）
+.superpowers/
