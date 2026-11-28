@@ -128,4 +128,29 @@ describe("VendorFilter", () => {
     await userEvent.setup().click(allRow());
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("点商家行的计数区域或空白处也会切换勾选", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderFilter([]);
+    const row = screen.getByText("34/57").closest("div") as HTMLElement;
+    expect(row).toHaveStyle({ cursor: "pointer" });
+    await user.click(screen.getByText("34/57"));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(["yunyoo"]);
+    onChange.mockClear();
+    await user.click(row);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(["yunyoo"]);
+  });
+
+  it("点商家名称文字只切换一次", async () => {
+    const { onChange } = renderFilter([]);
+    await userEvent.setup().click(screen.getByText("云悠"));
+    // 名称在复选框标签里：行级点击要让位给控件，否则一次点击切换两次
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(["yunyoo"]);
+  });
+
+  it("点「全部」行的计数区域也会清空已选", async () => {
+    const { onChange } = renderFilter(["yunyoo"]);
+    await userEvent.setup().click(screen.getByText("36/70"));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith([]);
+  });
 });

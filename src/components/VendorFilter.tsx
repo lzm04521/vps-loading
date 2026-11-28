@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type MouseEvent } from "react";
 import { Badge, Button, Card, Checkbox, Input, Radio, Space } from "antd";
 import { MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import type { VendorStat } from "../types";
 const EXPANDED_WIDTH = 224;
 const COLLAPSED_WIDTH = 56;
 
-/** 行容器：左侧控件 + 右侧计数。计数不放进控件 children——antd 5.29 的 Checkbox/Radio
+/** 行容器：整行可点，左侧控件 + 右侧计数。计数不放进控件 children——antd 5.29 的 Checkbox/Radio
  *  不支持语义化 styles，标签内容撑不满整行，做不出“名称左、计数右” */
 const rowStyle: CSSProperties = {
   display: "flex",
@@ -15,7 +15,16 @@ const rowStyle: CSSProperties = {
   alignItems: "center",
   padding: "6px 8px",
   borderRadius: 6,
+  cursor: "pointer",
 };
+
+/** 行级点击：点在控件标签内时交给控件自己的 change 处理，避免一次点击切换两次 */
+function rowClick(action: () => void) {
+  return (e: MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("label")) return;
+    action();
+  };
+}
 
 /** 有货/总数计数：有货绿、售罄灰 */
 function StockCount({ ok, total }: { ok: number; total: number }) {
@@ -57,6 +66,10 @@ export function VendorFilter({
 
   const toggle = (key: string) =>
     onChange(selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key]);
+  // 已是全部时不再回调，否则页面会拿一个新的空数组重查一次
+  const selectAll = () => {
+    if (selected.length > 0) onChange([]);
+  };
 
   const toggleLabel = collapsed ? t("products.expandSidebar") : t("products.collapseSidebar");
   const toggleButton = (
@@ -131,14 +144,11 @@ export function VendorFilter({
               onChange={(e) => setKeyword(e.target.value)}
             />
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-              <div style={{ ...rowStyle, borderBottom: "1px solid #f0f0f0" }}>
-                {/* 已是全部时不再回调，否则页面会拿一个新的空数组重查一次 */}
-                <Radio
-                  checked={selected.length === 0}
-                  onChange={() => {
-                    if (selected.length > 0) onChange([]);
-                  }}
-                >
+              <div
+                style={{ ...rowStyle, borderBottom: "1px solid #f0f0f0" }}
+                onClick={rowClick(selectAll)}
+              >
+                <Radio checked={selected.length === 0} onChange={selectAll}>
                   {t("products.allVendors")}
                 </Radio>
                 {/* 列表未加载到时不显示计数，避免闪一下 0/0 */}
@@ -147,7 +157,11 @@ export function VendorFilter({
               {shown.map((v) => {
                 const on = selected.includes(v.key);
                 return (
-                  <div key={v.key} style={{ ...rowStyle, background: on ? "#e6f4ff" : undefined }}>
+                  <div
+                    key={v.key}
+                    style={{ ...rowStyle, background: on ? "#e6f4ff" : undefined }}
+                    onClick={rowClick(() => toggle(v.key))}
+                  >
                     <Checkbox checked={on} onChange={() => toggle(v.key)}>
                       <span style={on ? { color: "#1677ff", fontWeight: 600 } : undefined}>
                         {v.name}
