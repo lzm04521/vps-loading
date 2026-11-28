@@ -5,6 +5,7 @@ import type { ProductPage, RegionStat, VendorStat } from "../types";
 import { productsList, regionsList, vendorsList } from "../api/ipc";
 import { ipcErrorMessage } from "../i18n/errors";
 import { ProductCard } from "../components/ProductCard";
+import { VendorFilter } from "../components/VendorFilter";
 
 const DEFAULT_PAGE_SIZE = 24;
 const PAGE_SIZE_OPTIONS = [24, 48, 96, 200, 500, 1000];
@@ -68,8 +69,8 @@ export default function Products() {
 
   const resetPage = () => setCurrent(1);
 
-  return (
-    <Space direction="vertical" size={12} style={{ width: "100%" }}>
+  const content = (
+    <Space direction="vertical" size={12} style={{ flex: 1, minWidth: 0 }}>
       <Card size="small">
         <Space size={8} wrap>
           <Input.Search
@@ -80,22 +81,6 @@ export default function Products() {
               setQ(v);
               resetPage();
             }}
-          />
-          <Select
-            mode="multiple"
-            maxTagCount="responsive"
-            style={{ minWidth: 200, maxWidth: 320 }}
-            placeholder={t("products.vendor")}
-            allowClear
-            value={vendor}
-            onChange={(v) => {
-              setVendor(v);
-              resetPage();
-            }}
-            options={vendors.map((v) => ({
-              value: v.key,
-              label: `${v.name} (${v.ok}/${v.total})`,
-            }))}
           />
           <Select
             style={{ width: 150 }}
@@ -201,5 +186,19 @@ export default function Products() {
         }}
       />
     </Space>
+  );
+
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      <VendorFilter
+        vendors={vendors}
+        selected={vendor}
+        onChange={(next) => {
+          setVendor(next);
+          resetPage();
+        }}
+      />
+      {content}
+    </div>
   );
 }
